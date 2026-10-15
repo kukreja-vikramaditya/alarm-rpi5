@@ -120,6 +120,7 @@ bootstrap_rootfs() {
         iwd
         e2fsprogs
         parted
+        linux-firmware-broadcom
     )
 
     # Append user-specified extra packages
@@ -181,6 +182,11 @@ configure_system() {
 
     # Ensure system config files have standard read permissions
     chmod 644 "${ROOTFS}/etc/hostname" "${ROOTFS}/etc/hosts" "${ROOTFS}/etc/locale.conf" "${ROOTFS}/etc/locale.gen" "${ROOTFS}/etc/pacman.conf" "${ROOTFS}/etc/fstab"
+
+    # Pre-configure default automatic wired DHCP connection
+    mkdir -p -- "${ROOTFS}/etc/NetworkManager/system-connections"
+    cp -- "${DATA_DIR}/wired.nmconnection" "${ROOTFS}/etc/NetworkManager/system-connections/wired.nmconnection"
+    chmod 600 "${ROOTFS}/etc/NetworkManager/system-connections/wired.nmconnection"
 
     # Execute system setup inside chroot
     arch-chroot "${ROOTFS}" /bin/bash <<-CHROOT

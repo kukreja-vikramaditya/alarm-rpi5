@@ -95,6 +95,7 @@ assert_file_exists "${DATA_DIR}/locale.gen" "locale.gen exists in data/"
 assert_file_exists "${DATA_DIR}/locale.conf" "locale.conf exists in data/"
 assert_file_exists "${DATA_DIR}/alarm-growfs.sh" "alarm-growfs.sh exists in data/"
 assert_file_exists "${DATA_DIR}/alarm-growfs.service" "alarm-growfs.service exists in data/"
+assert_file_exists "${DATA_DIR}/wired.nmconnection" "wired.nmconnection exists in data/"
 
 # Test 4: Partition boundary math
 boot_size=256
