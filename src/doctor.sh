@@ -6,7 +6,7 @@ get_pkg_for_cmd() {
         parted) echo "sudo pacman -S parted" ;;
         mkfs.vfat) echo "sudo pacman -S dosfstools" ;;
         pacstrap | arch-chroot) echo "sudo pacman -S arch-install-scripts" ;;
-        mkfs.ext4 | e2fsck | resize2fs | dumpe2fs) echo "sudo pacman -S e2fsprogs" ;;
+        mkfs.ext4 | e2fsck | resize2fs | dumpe2fs | tune2fs) echo "sudo pacman -S e2fsprogs" ;;
         losetup) echo "sudo pacman -S util-linux" ;;
         xz) echo "sudo pacman -S xz" ;;
         truncate | numfmt) echo "sudo pacman -S coreutils" ;;

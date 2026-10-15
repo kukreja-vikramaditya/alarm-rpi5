@@ -118,6 +118,8 @@ bootstrap_rootfs() {
         nano
         networkmanager
         iwd
+        e2fsprogs
+        parted
     )
 
     # Append user-specified extra packages
@@ -170,6 +172,16 @@ configure_system() {
 
     sed "s|@ALARM_MIRROR@|${ALARM_MIRROR}|g" "${DATA_DIR}/pacman-runtime.conf" >"${ROOTFS}/etc/pacman.conf"
 
+    # Install first-boot auto-expand service
+    mkdir -p -- "${ROOTFS}/usr/local/bin" "${ROOTFS}/etc/systemd/system"
+    cp -- "${DATA_DIR}/alarm-growfs.sh" "${ROOTFS}/usr/local/bin/alarm-growfs"
+    chmod 755 "${ROOTFS}/usr/local/bin/alarm-growfs"
+    cp -- "${DATA_DIR}/alarm-growfs.service" "${ROOTFS}/etc/systemd/system/alarm-growfs.service"
+    chmod 644 "${ROOTFS}/etc/systemd/system/alarm-growfs.service"
+
+    # Ensure system config files have standard read permissions
+    chmod 644 "${ROOTFS}/etc/hostname" "${ROOTFS}/etc/hosts" "${ROOTFS}/etc/locale.conf" "${ROOTFS}/etc/locale.gen" "${ROOTFS}/etc/pacman.conf" "${ROOTFS}/etc/fstab"
+
     # Execute system setup inside chroot
     arch-chroot "${ROOTFS}" /bin/bash <<-CHROOT
 	set -euo pipefail
@@ -187,13 +199,17 @@ configure_system() {
 	# Enable services
 	systemctl enable sshd.service
 	systemctl enable NetworkManager.service
+	systemctl enable alarm-growfs.service
 
 	# Root password
 	printf '%s\n' "${ROOT_USER:-root}:${ROOT_PASSWORD}" | chpasswd
 
-	# Create user
+	# Ensure /home has standard 755 permissions and create non-root user
+	chmod 755 /home
 	useradd -m -G wheel -s /bin/bash "${ALARM_USER}"
 	printf '%s\n' "${ALARM_USER}:${ALARM_PASSWORD}" | chpasswd
+	chown -R "${ALARM_USER}:${ALARM_USER}" "/home/${ALARM_USER}"
+	chmod 700 "/home/${ALARM_USER}"
 
 	# Clean pacman cache to reduce image size
 	pacman -Scc --noconfirm
@@ -237,14 +253,16 @@ finalize_image() {
     ensure_loop_partitions "${LOOP}"
     # shellcheck disable=SC2016 # Expression is intentional parameter for bash -c subshell
     run_spin "Checking filesystem integrity" bash -c 'e2fsck -f -y "$1" >/dev/null 2>&1 || true' _ "${LOOP}p2"
+    # Reduce ext4 reserved block ratio to 1% so non-root users have immediate space
+    tune2fs -m 1 "${LOOP}p2" >/dev/null 2>&1 || true
     # shellcheck disable=SC2016 # Expression is intentional parameter for bash -c subshell
     run_spin "Shrinking ext4 filesystem to minimum" bash -c 'resize2fs -M "$1" >/dev/null 2>&1' _ "${LOOP}p2"
 
-    # Calculate new partition boundaries
+    # Calculate new partition boundaries (+64MiB margin for non-root headroom)
     local block_count block_size fs_size_bytes part2_start part2_end truncate_size
     block_count="$(dumpe2fs -h "${LOOP}p2" 2>/dev/null | awk '/^Block count:/{print $3}')"
     block_size="$(dumpe2fs -h "${LOOP}p2" 2>/dev/null | awk '/^Block size:/{print $3}')"
-    fs_size_bytes=$((block_count * block_size + 16 * 1024 * 1024)) # +16MiB margin
+    fs_size_bytes=$((block_count * block_size + 64 * 1024 * 1024)) # +64MiB margin
     part2_start="$(parted -s -- "${IMG_FILE}" unit B print | awk '/^ 2/{print $2}' | tr -d 'B')"
     part2_end=$((part2_start + fs_size_bytes))
 

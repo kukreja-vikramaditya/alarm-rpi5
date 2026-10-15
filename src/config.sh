@@ -6,12 +6,12 @@
 readonly REQUIRED_CMDS=(
     parted mkfs.vfat mkfs.ext4 losetup
     pacstrap arch-chroot
-    truncate e2fsck resize2fs dumpe2fs
+    truncate e2fsck resize2fs dumpe2fs tune2fs
     xz numfmt
 )
 
-# File creation mask: owner-only
-umask 0077
+# File creation mask: standard permissions (0755 dirs, 0644 files)
+umask 0022
 
 # Defaults
 BUILD_DATE="$(date +%Y%m%d)"

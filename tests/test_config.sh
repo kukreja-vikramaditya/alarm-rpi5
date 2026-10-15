@@ -24,8 +24,8 @@ source "${SRC_DIR}/logger.sh"
 source "${SRC_DIR}/config.sh"
 
 # Test 1: REQUIRED_CMDS array
-assert_eq "12" "${#REQUIRED_CMDS[@]}" "REQUIRED_CMDS has 12 items"
-for req in parted mkfs.vfat mkfs.ext4 losetup pacstrap arch-chroot truncate e2fsck resize2fs dumpe2fs xz numfmt; do
+assert_eq "13" "${#REQUIRED_CMDS[@]}" "REQUIRED_CMDS has 13 items"
+for req in parted mkfs.vfat mkfs.ext4 losetup pacstrap arch-chroot truncate e2fsck resize2fs dumpe2fs tune2fs xz numfmt; do
     found=0
     for c in "${REQUIRED_CMDS[@]}"; do
         [[ "$c" == "$req" ]] && {

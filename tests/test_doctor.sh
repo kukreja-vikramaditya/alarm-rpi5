@@ -35,6 +35,7 @@ assert_eq "sudo pacman -S dosfstools" "$(get_pkg_for_cmd mkfs.vfat)" "package ma
 assert_eq "sudo pacman -S arch-install-scripts" "$(get_pkg_for_cmd pacstrap)" "package mapping for pacstrap"
 assert_eq "sudo pacman -S arch-install-scripts" "$(get_pkg_for_cmd arch-chroot)" "package mapping for arch-chroot"
 assert_eq "sudo pacman -S e2fsprogs" "$(get_pkg_for_cmd mkfs.ext4)" "package mapping for mkfs.ext4"
+assert_eq "sudo pacman -S e2fsprogs" "$(get_pkg_for_cmd tune2fs)" "package mapping for tune2fs"
 assert_eq "sudo pacman -S util-linux" "$(get_pkg_for_cmd losetup)" "package mapping for losetup"
 assert_eq "sudo pacman -S xz" "$(get_pkg_for_cmd xz)" "package mapping for xz"
 assert_eq "sudo pacman -S coreutils" "$(get_pkg_for_cmd truncate)" "package mapping for truncate"
