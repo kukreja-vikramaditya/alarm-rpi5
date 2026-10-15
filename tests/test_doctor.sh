@@ -43,6 +43,7 @@ set +e
 check_out="$(check_environment 2>&1)"
 check_code=$?
 set -e
+assert_eq "0" "$((check_code == 0 || check_code == 1 ? 0 : check_code))" "check_environment returns valid exit code (0 or 1)"
 assert_contains "$check_out" "Host Environment Diagnostics" "check_environment prints header"
 assert_contains "$check_out" "Tool:" "check_environment inspects tools"
 assert_contains "$check_out" "ALARM mirror reachable" "check_environment tests mirror"

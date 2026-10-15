@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2317  # cleanup is invoked via trap, not direct call
+# shellcheck disable=SC2317,SC2034  # cleanup is invoked via trap; resources are shared across modules
 # src/cleanup.sh — Safe, idempotent resource cleanup before setup and on EXIT/INT/TERM
 
 # Tracked resources that must be released upon exit
@@ -60,7 +60,7 @@ clean_stale_temp_files() {
 # ──────────────────────────────────────────────────────────────────────
 cleanup() {
     local exit_code=$?
-    set +e  # Don't fail during cleanup
+    set +e # Don't fail during cleanup
 
     # 1. Unmount and remove rootfs temporary directory
     if [[ -n "${ROOTFS}" ]]; then

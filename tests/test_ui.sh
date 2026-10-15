@@ -58,7 +58,7 @@ assert_contains "$spin_out" "spin_success" "run_spin executes passed command"
 
 # Test 5: die function exits with status 1 and error output
 set +e
-die_out="$( (die "fatal failure message") 2>&1 )"
+die_out="$( (die "fatal failure message") 2>&1)"
 die_code=$?
 set -e
 assert_eq "1" "$die_code" "die exits with code 1"

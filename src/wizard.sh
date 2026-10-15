@@ -40,7 +40,7 @@ interactive_wizard_gum() {
         "  Hostname:    ${TARGET_HOSTNAME}" \
         "  User:        ${ALARM_USER}" \
         "  Image Size:  ${IMG_SIZE}" \
-        "  Compressed:  $(( COMPRESS ? 1 : 0 )) (xz)" \
+        "  Compressed:  $((COMPRESS ? 1 : 0)) (xz)" \
         "  Output Path: ${OUTPUT_DIR}/"
     echo ""
 
@@ -91,7 +91,7 @@ Build Summary:
   Hostname:    ${TARGET_HOSTNAME}
   User:        ${ALARM_USER}
   Image Size:  ${IMG_SIZE}
-  Compressed:  $(( COMPRESS ? 1 : 0 )) (xz)
+  Compressed:  $((COMPRESS ? 1 : 0)) (xz)
   Output Path: ${OUTPUT_DIR}/
 
 SUMMARY

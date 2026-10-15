@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034 # Parsed CLI flags and USE_GUM are consumed by other modules
 # src/cli.sh — Command line interface, usage, and argument parsing
 
 usage() {
@@ -50,36 +51,60 @@ _arg_no_compress=""
 parse_cli() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            -c|--check)
-                _arg_check=1; shift ;;
-            -i|--interactive)
-                _arg_interactive=1; shift ;;
-            -y|--non-interactive|--batch)
-                _arg_non_interactive=1; shift ;;
+            -c | --check)
+                _arg_check=1
+                shift
+                ;;
+            -i | --interactive)
+                _arg_interactive=1
+                shift
+                ;;
+            -y | --non-interactive | --batch)
+                _arg_non_interactive=1
+                shift
+                ;;
             --no-gum)
-                USE_GUM=0; shift ;;
-            -o|--output-dir)
+                USE_GUM=0
+                shift
+                ;;
+            -o | --output-dir)
                 [[ -n "${2:-}" ]] || die "Missing argument for $1"
-                _arg_output_dir="$2"; shift 2 ;;
-            -v|--version)
+                _arg_output_dir="$2"
+                shift 2
+                ;;
+            -v | --version)
                 [[ -n "${2:-}" ]] || die "Missing argument for $1"
-                _arg_version="$2"; shift 2 ;;
-            -s|--img-size)
+                _arg_version="$2"
+                shift 2
+                ;;
+            -s | --img-size)
                 [[ -n "${2:-}" ]] || die "Missing argument for $1"
-                _arg_img_size="$2"; shift 2 ;;
+                _arg_img_size="$2"
+                shift 2
+                ;;
             --hostname)
                 [[ -n "${2:-}" ]] || die "Missing argument for $1"
-                _arg_hostname="$2"; shift 2 ;;
+                _arg_hostname="$2"
+                shift 2
+                ;;
             --no-compress)
-                _arg_no_compress=1; shift ;;
-            -h|--help)
-                usage; exit 0 ;;
+                _arg_no_compress=1
+                shift
+                ;;
+            -h | --help)
+                usage
+                exit 0
+                ;;
             --)
-                shift; break ;;
+                shift
+                break
+                ;;
             -*)
-                die "Unknown option: $1 (see --help)" ;;
+                die "Unknown option: $1 (see --help)"
+                ;;
             *)
-                die "Unexpected argument: $1 (see --help)" ;;
+                die "Unexpected argument: $1 (see --help)"
+                ;;
         esac
     done
 }

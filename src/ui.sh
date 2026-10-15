@@ -37,7 +37,7 @@ if [[ -n "${GUM_BIN}" && -t 1 ]]; then
     USE_GUM=1
 fi
 
-_log()  { printf '[%s] [%-5s] %s\n' "$(date '+%H:%M:%S')" "$1" "$2"; }
+_log() { printf '[%s] [%-5s] %s\n' "$(date '+%H:%M:%S')" "$1" "$2"; }
 
 log_info() {
     if [[ "${USE_GUM:-0}" -eq 1 ]]; then
@@ -86,7 +86,8 @@ gum_banner() {
 }
 
 run_spin() {
-    local title="$1"; shift
+    local title="$1"
+    shift
     if [[ "${USE_GUM:-0}" -eq 1 ]]; then
         "$GUM_BIN" spin --spinner dot --title "$title" -- "$@"
     else
@@ -104,19 +105,19 @@ format_badge() {
     local type="$1"
     if [[ "${USE_GUM:-0}" -eq 1 ]]; then
         case "$type" in
-            OK)      "$GUM_BIN" style --foreground 42 --bold "[  OK  ]" ;;
+            OK) "$GUM_BIN" style --foreground 42 --bold "[  OK  ]" ;;
             MISSING) "$GUM_BIN" style --foreground 196 --bold "[MISSING]" ;;
-            WARN)    "$GUM_BIN" style --foreground 214 "[ WARN ]" ;;
-            INFO)    "$GUM_BIN" style --foreground 39 "[ INFO ]" ;;
-            *)       printf '[%s]' "$type" ;;
+            WARN) "$GUM_BIN" style --foreground 214 "[ WARN ]" ;;
+            INFO) "$GUM_BIN" style --foreground 39 "[ INFO ]" ;;
+            *) printf '[%s]' "$type" ;;
         esac
     else
         case "$type" in
-            OK)      printf '[  OK  ]' ;;
+            OK) printf '[  OK  ]' ;;
             MISSING) printf '[MISSING]' ;;
-            WARN)    printf '[ WARN ]' ;;
-            INFO)    printf '[ INFO ]' ;;
-            *)       printf '[%s]' "$type" ;;
+            WARN) printf '[ WARN ]' ;;
+            INFO) printf '[ INFO ]' ;;
+            *) printf '[%s]' "$type" ;;
         esac
     fi
 }

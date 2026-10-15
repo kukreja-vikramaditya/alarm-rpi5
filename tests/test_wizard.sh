@@ -44,17 +44,16 @@ assert_contains "$err_out" "Interactive mode requires an interactive terminal" "
 _arg_interactive=""
 
 # Test 3: interactive_wizard_bash processes inputs properly
-(
-    USE_GUM=0
-    VERSION="0.1.0"
-    TARGET_HOSTNAME="raspberrypi"
-    ALARM_USER="alarm"
-    ROOT_PASSWORD="root"
-    ALARM_PASSWORD="alarm"
-    IMG_SIZE="4G"
-    COMPRESS=1
+USE_GUM=0
+VERSION="0.1.0"
+TARGET_HOSTNAME="raspberrypi"
+ALARM_USER="alarm"
+ROOT_PASSWORD="root"
+ALARM_PASSWORD="alarm"
+IMG_SIZE="4G"
+COMPRESS=1
 
-    interactive_wizard_bash <<EOF >/dev/null
+interactive_wizard_bash <<EOF >/dev/null
 0.9.0
 rpi5-test
 tester
@@ -65,21 +64,18 @@ y
 y
 EOF
 
-    assert_eq "0.9.0" "$VERSION" "wizard updates VERSION"
-    assert_eq "rpi5-test" "$TARGET_HOSTNAME" "wizard updates TARGET_HOSTNAME"
-    assert_eq "tester" "$ALARM_USER" "wizard updates ALARM_USER"
-    assert_eq "root123" "$ROOT_PASSWORD" "wizard updates ROOT_PASSWORD"
-    assert_eq "user123" "$ALARM_PASSWORD" "wizard updates ALARM_PASSWORD"
-    assert_eq "8G" "$IMG_SIZE" "wizard updates IMG_SIZE"
-    assert_eq "1" "$COMPRESS" "wizard sets COMPRESS to 1 on 'y'"
-)
-# Transfer subshell passes (7 tests in subshell)
-for _ in {1..7}; do ((PASSED++)) || true; done
+assert_eq "0.9.0" "$VERSION" "wizard updates VERSION"
+assert_eq "rpi5-test" "$TARGET_HOSTNAME" "wizard updates TARGET_HOSTNAME"
+assert_eq "tester" "$ALARM_USER" "wizard updates ALARM_USER"
+assert_eq "root123" "$ROOT_PASSWORD" "wizard updates ROOT_PASSWORD"
+assert_eq "user123" "$ALARM_PASSWORD" "wizard updates ALARM_PASSWORD"
+assert_eq "8G" "$IMG_SIZE" "wizard updates IMG_SIZE"
+assert_eq "1" "$COMPRESS" "wizard sets COMPRESS to 1 on 'y'"
 
 # Test 4: interactive_wizard_bash handles compression disabled
-(
-    USE_GUM=0
-    interactive_wizard_bash <<EOF >/dev/null
+USE_GUM=0
+COMPRESS=1
+interactive_wizard_bash <<EOF >/dev/null
 
 
 
@@ -89,13 +85,12 @@ for _ in {1..7}; do ((PASSED++)) || true; done
 n
 y
 EOF
-    assert_eq "0" "$COMPRESS" "wizard sets COMPRESS to 0 on 'n'"
-)
-((PASSED++)) || true
+assert_eq "0" "$COMPRESS" "wizard sets COMPRESS to 0 on 'n'"
 
 # Test 5: interactive_wizard_bash cancellation when user declines confirmation
 set +e
-cancel_out="$( (interactive_wizard_bash <<EOF
+cancel_out="$( (
+    interactive_wizard_bash <<EOF
 0.1.0
 raspberrypi
 alarm
@@ -105,7 +100,7 @@ alarm
 y
 n
 EOF
-) 2>&1 )"
+) 2>&1)"
 cancel_code=$?
 set -e
 assert_eq "0" "$cancel_code" "wizard exits 0 when cancelled"

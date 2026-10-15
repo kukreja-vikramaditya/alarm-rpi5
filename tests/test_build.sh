@@ -68,7 +68,7 @@ ROOTFS=""
 
 # Test 3: Pacman configuration generation template
 test_conf="$(mktemp /tmp/pacman-aarch64.testgenXXXXXX.conf)"
-cat > "${test_conf}" <<-EOF
+cat >"${test_conf}" <<-EOF
 [options]
 HoldPkg     = pacman glibc
 Architecture = aarch64
@@ -96,7 +96,7 @@ rm -f "${test_conf}"
 
 # Test 4: Partition boundary math
 boot_size=256
-boot_end=$(( boot_size + 1 ))
+boot_end=$((boot_size + 1))
 assert_eq "257" "$boot_end" "boot partition end is offset by 1MiB for alignment"
 
 test_summary "src/build.sh"

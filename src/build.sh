@@ -13,7 +13,9 @@ create_image() {
     if command -v losetup &>/dev/null && [[ -f "${IMG_FILE}" ]]; then
         local ldev
         while read -r ldev; do
-            [[ -n "$ldev" ]] && losetup -d "$ldev" 2>/dev/null || true
+            if [[ -n "$ldev" ]]; then
+                losetup -d "$ldev" 2>/dev/null || true
+            fi
         done < <(losetup -j "${IMG_FILE}" 2>/dev/null | cut -d: -f1)
     fi
 
@@ -24,7 +26,7 @@ create_image() {
     # Partition table: GPT
     #   p1: FAT32, ${BOOT_SIZE_MIB}MiB, bootable, type ESP/boot
     #   p2: ext4,   fills remainder
-    local boot_end=$(( BOOT_SIZE_MIB + 1 ))  # 1MiB alignment offset
+    local boot_end=$((BOOT_SIZE_MIB + 1)) # 1MiB alignment offset
     parted -s -- "${IMG_FILE}" \
         mklabel gpt \
         mkpart "boot" fat32 1MiB "${boot_end}MiB" \
@@ -63,7 +65,7 @@ bootstrap_rootfs() {
 
     # Write pacman config for aarch64 / ALARM repos
     PACMAN_CONF="$(mktemp -- /tmp/pacman-aarch64.XXXXXX.conf)"
-    cat > "${PACMAN_CONF}" <<-EOF
+    cat >"${PACMAN_CONF}" <<-EOF
 	[options]
 	HoldPkg     = pacman glibc
 	Architecture = aarch64
@@ -99,7 +101,7 @@ bootstrap_rootfs() {
     # Append user-specified extra packages
     if [[ -n "${EXTRA_PACKAGES}" ]]; then
         local -a extras
-        IFS=' ' read -ra extras <<< "${EXTRA_PACKAGES}"
+        IFS=' ' read -ra extras <<<"${EXTRA_PACKAGES}"
         packages+=("${extras[@]}")
     fi
 
@@ -121,7 +123,7 @@ configure_boot() {
     log_phase "Phase 3/5 — Configure boot"
 
     # fstab
-    cat > "${ROOTFS}/etc/fstab" <<-'EOF'
+    cat >"${ROOTFS}/etc/fstab" <<-'EOF'
 	# <device>             <dir>    <type>  <options>          <dump> <pass>
 	/dev/mmcblk0p1         /boot    vfat    defaults           0      2
 	/dev/mmcblk0p2         /        ext4    defaults,noatime   0      1
@@ -129,10 +131,10 @@ configure_boot() {
 
     # Kernel command line
     printf '%s\n' "root=/dev/mmcblk0p2 rw rootwait console=tty1 console=ttyAMA10,115200" \
-        > "${ROOTFS}/boot/cmdline.txt"
+        >"${ROOTFS}/boot/cmdline.txt"
 
     # Pi 5 config.txt
-    cat > "${ROOTFS}/boot/config.txt" <<-'EOF'
+    cat >"${ROOTFS}/boot/config.txt" <<-'EOF'
 	# Arch Linux ARM — Raspberry Pi 5
 	# This file is read by the Pi firmware before the kernel boots.
 
@@ -254,22 +256,24 @@ finalize_image() {
 
     # ── Shrink ext4 filesystem to minimum ────────────────────────────
     LOOP="$(losetup --find --show --partscan -- "${IMG_FILE}")"
+    # shellcheck disable=SC2016 # Expression is intentional parameter for bash -c subshell
     run_spin "Checking filesystem integrity" bash -c 'e2fsck -f -y "$1" >/dev/null 2>&1 || true' _ "${LOOP}p2"
+    # shellcheck disable=SC2016 # Expression is intentional parameter for bash -c subshell
     run_spin "Shrinking ext4 filesystem to minimum" bash -c 'resize2fs -M "$1" >/dev/null 2>&1' _ "${LOOP}p2"
 
     # Calculate new partition boundaries
     local block_count block_size fs_size_bytes part2_start part2_end truncate_size
     block_count="$(dumpe2fs -h "${LOOP}p2" 2>/dev/null | awk '/^Block count:/{print $3}')"
     block_size="$(dumpe2fs -h "${LOOP}p2" 2>/dev/null | awk '/^Block size:/{print $3}')"
-    fs_size_bytes=$(( block_count * block_size + 16 * 1024 * 1024 ))  # +16MiB margin
+    fs_size_bytes=$((block_count * block_size + 16 * 1024 * 1024)) # +16MiB margin
     part2_start="$(parted -s -- "${IMG_FILE}" unit B print | awk '/^ 2/{print $2}' | tr -d 'B')"
-    part2_end=$(( part2_start + fs_size_bytes ))
+    part2_end=$((part2_start + fs_size_bytes))
 
     losetup -d "${LOOP}"
     LOOP=""
 
     # Truncate image to shrunk size + 1MiB alignment padding
-    truncate_size=$(( part2_end + 1024 * 1024 ))
+    truncate_size=$((part2_end + 1024 * 1024))
     truncate -s "${truncate_size}" -- "${IMG_FILE}"
 
     # Fix partition table to match truncated image
@@ -298,6 +302,7 @@ finalize_image() {
         final_file="${IMG_FILE}"
     fi
 
+    # shellcheck disable=SC2034 # Global variable read by build-alarm-rpi5.sh entrypoint
     FINAL_BUILT_FILE="${final_file}"
 
     # ── Verify temporary cleanup ─────────────────────────────────────

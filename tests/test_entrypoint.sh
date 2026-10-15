@@ -26,9 +26,17 @@ fi
 
 # Test 2: File permissions and symlink
 assert_file_exists "$BIN" "build-alarm-rpi5.sh exists"
-[[ -x "$BIN" ]] && assert_eq "0" "0" "build-alarm-rpi5.sh is executable" || assert_eq "0" "1" "build-alarm-rpi5.sh is executable"
+if [[ -x "$BIN" ]]; then
+    assert_eq "0" "0" "build-alarm-rpi5.sh is executable"
+else
+    assert_eq "0" "1" "build-alarm-rpi5.sh is executable"
+fi
 assert_file_exists "$ALIAS" "build.sh exists"
-[[ -L "$ALIAS" ]] && assert_eq "0" "0" "build.sh is a symlink" || assert_eq "0" "1" "build.sh is a symlink"
+if [[ -L "$ALIAS" ]]; then
+    assert_eq "0" "0" "build.sh is a symlink"
+else
+    assert_eq "0" "1" "build.sh is a symlink"
+fi
 
 # Test 3: --help and -h flags
 out="$("$BIN" --help 2>&1 || true)"

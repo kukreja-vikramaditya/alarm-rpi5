@@ -12,8 +12,10 @@
 set -euo pipefail
 
 # Script location resolution (works when invoked from any working directory)
-readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
-readonly SCRIPT_NAME="$(basename -- "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+readonly SCRIPT_DIR
+SCRIPT_NAME="$(basename -- "${BASH_SOURCE[0]}")"
+readonly SCRIPT_NAME
 readonly SRC_DIR="${SCRIPT_DIR}/src"
 
 # Source modular components
@@ -47,7 +49,7 @@ main() {
     fi
 
     # 3. Explicit interactive mode without a tty fails early
-    if [[ -n "${_arg_interactive:-}" && ( ! -t 0 || ! -t 1 ) ]]; then
+    if [[ -n "${_arg_interactive:-}" && (! -t 0 || ! -t 1) ]]; then
         die "Interactive mode requires an interactive terminal (stdin and stdout must be a tty)."
     fi
 
@@ -105,7 +107,9 @@ main() {
                 if command -v losetup &>/dev/null; then
                     local ldev
                     while read -r ldev; do
-                        [[ -n "$ldev" ]] && losetup -d "$ldev" 2>/dev/null || true
+                        if [[ -n "$ldev" ]]; then
+                            losetup -d "$ldev" 2>/dev/null || true
+                        fi
                     done < <(losetup -j "${IMG_FILE}" 2>/dev/null | cut -d: -f1)
                 fi
                 rm -f -- "${IMG_FILE}" "${IMG_FILE}.xz"
@@ -130,8 +134,8 @@ main() {
     configure_system
     finalize_image
 
-    local elapsed=$(( $(date +%s) - start_time ))
-    log_info "Total build time: $(( elapsed / 60 ))m $(( elapsed % 60 ))s"
+    local elapsed=$(($(date +%s) - start_time))
+    log_info "Total build time: $((elapsed / 60))m $((elapsed % 60))s"
 
     echo ""
     echo "================================================================"

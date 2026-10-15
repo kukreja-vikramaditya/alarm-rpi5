@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034 # Configuration variables are shared across sourced modules
 # src/config.sh — Defaults and environment configuration
 
 # External required commands for building and packaging

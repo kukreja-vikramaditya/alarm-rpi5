@@ -26,7 +26,10 @@ assert_eq "12" "${#REQUIRED_CMDS[@]}" "REQUIRED_CMDS has 12 items"
 for req in parted mkfs.vfat mkfs.ext4 losetup pacstrap arch-chroot truncate e2fsck resize2fs dumpe2fs xz numfmt; do
     found=0
     for c in "${REQUIRED_CMDS[@]}"; do
-        [[ "$c" == "$req" ]] && { found=1; break; }
+        [[ "$c" == "$req" ]] && {
+            found=1
+            break
+        }
     done
     assert_eq "1" "$found" "REQUIRED_CMDS contains $req"
 done

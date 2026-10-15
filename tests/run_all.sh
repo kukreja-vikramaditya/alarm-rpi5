@@ -14,14 +14,15 @@ echo "════════════════════════�
 echo ""
 
 SUITES=(
-    "test_ui.sh"          # src/ui.sh
-    "test_cleanup.sh"     # src/cleanup.sh
-    "test_cli.sh"         # src/cli.sh
-    "test_config.sh"      # src/config.sh
-    "test_wizard.sh"      # src/wizard.sh
-    "test_doctor.sh"      # src/doctor.sh
-    "test_build.sh"       # src/build.sh
-    "test_entrypoint.sh"  # build-alarm-rpi5.sh & build.sh
+    "test_lint.sh"       # Linter and formatting validation
+    "test_ui.sh"         # src/ui.sh
+    "test_cleanup.sh"    # src/cleanup.sh
+    "test_cli.sh"        # src/cli.sh
+    "test_config.sh"     # src/config.sh
+    "test_wizard.sh"     # src/wizard.sh
+    "test_doctor.sh"     # src/doctor.sh
+    "test_build.sh"      # src/build.sh
+    "test_entrypoint.sh" # build-alarm-rpi5.sh & build.sh
 )
 
 for suite in "${SUITES[@]}"; do
