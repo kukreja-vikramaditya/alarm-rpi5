@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# src/cli.sh — Command line interface, usage, and argument parsing
+
+usage() {
+    cat <<USAGE
+Usage: sudo ./${SCRIPT_NAME} [OPTIONS]
+
+Build an Arch Linux ARM image for Raspberry Pi 5.
+Runs in interactive wizard mode by default when attached to a terminal.
+
+Options:
+  -c, --check              Check host environment and dependencies without building
+  -i, --interactive        Run interactive configuration wizard explicitly
+  -y, --non-interactive    Bypass interactive prompts and use defaults/flags
+  -o, --output-dir DIR     Output directory       (default: ${SCRIPT_DIR}/dist)
+  -v, --version VER        Image version string   (default: 0.1.0)
+  -s, --img-size SIZE      Raw image size         (default: 4G)
+      --hostname NAME      Target hostname        (default: raspberrypi)
+      --no-compress        Skip xz compression
+      --no-gum             Disable Gum styling and interactive elements
+  -h, --help               Show this help
+
+Environment overrides (lower precedence than flags):
+  IMG_SIZE, VERSION, IMG_NAME, BOOT_SIZE_MIB, TARGET_HOSTNAME,
+  ROOT_PASSWORD, ALARM_USER, ALARM_PASSWORD, TIMEZONE, LOCALE,
+  EXTRA_PACKAGES, ALARM_MIRROR, COMPRESS
+
+Examples:
+  ./${SCRIPT_NAME} --check
+  sudo ./${SCRIPT_NAME}                  # interactive wizard by default
+  sudo ./${SCRIPT_NAME} -y               # build immediately with defaults
+  sudo ./${SCRIPT_NAME} -o /mnt/build -v 1.0.0
+  EXTRA_PACKAGES="git htop" sudo ./${SCRIPT_NAME}
+USAGE
+}
+
+# Raw argument holders
+_arg_check=""
+_arg_interactive=""
+_arg_non_interactive=""
+_arg_output_dir=""
+_arg_version=""
+_arg_img_size=""
+_arg_hostname=""
+_arg_no_compress=""
+
+parse_cli() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -c|--check)
+                _arg_check=1; shift ;;
+            -i|--interactive)
+                _arg_interactive=1; shift ;;
+            -y|--non-interactive|--batch)
+                _arg_non_interactive=1; shift ;;
+            --no-gum)
+                USE_GUM=0; shift ;;
+            -o|--output-dir)
+                [[ -n "${2:-}" ]] || die "Missing argument for $1"
+                _arg_output_dir="$2"; shift 2 ;;
+            -v|--version)
+                [[ -n "${2:-}" ]] || die "Missing argument for $1"
+                _arg_version="$2"; shift 2 ;;
+            -s|--img-size)
+                [[ -n "${2:-}" ]] || die "Missing argument for $1"
+                _arg_img_size="$2"; shift 2 ;;
+            --hostname)
+                [[ -n "${2:-}" ]] || die "Missing argument for $1"
+                _arg_hostname="$2"; shift 2 ;;
+            --no-compress)
+                _arg_no_compress=1; shift ;;
+            -h|--help)
+                usage; exit 0 ;;
+            --)
+                shift; break ;;
+            -*)
+                die "Unknown option: $1 (see --help)" ;;
+            *)
+                die "Unexpected argument: $1 (see --help)" ;;
+        esac
+    done
+}

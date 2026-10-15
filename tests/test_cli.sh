@@ -39,14 +39,25 @@ assert_contains() {
 echo "=== Running ALARM RPi 5 Builder Tests ==="
 echo ""
 
-# Test 1: Bash syntax check
+# Test 1: Bash syntax check on all entry points and modules
 if bash -n "$BIN"; then
-    printf '  [PASS] Bash syntax validation (bash -n)\n'
+    printf '  [PASS] Entry script syntax validation (bash -n)\n'
     ((PASSED++)) || true
 else
-    printf '  [FAIL] Bash syntax validation failed\n'
+    printf '  [FAIL] Entry script syntax validation failed\n'
     ((FAILED++)) || true
 fi
+
+for mod in "${SCRIPT_DIR}"/src/*.sh; do
+    mod_name="$(basename "$mod")"
+    if bash -n "$mod"; then
+        printf '  [PASS] Module syntax: src/%s (bash -n)\n' "$mod_name"
+        ((PASSED++)) || true
+    else
+        printf '  [FAIL] Module syntax failed: src/%s\n' "$mod_name"
+        ((FAILED++)) || true
+    fi
+done
 
 # Test 2: --help flag exits 0 and displays usage
 output="$("$BIN" --help 2>&1 || true)"
@@ -118,10 +129,15 @@ set -e
 assert_eq "1" "$code" "-y without root exits at preflight"
 assert_contains "$output" "This script must be run as root" "-y preflight message"
 
-# Test 11: Repository structure checks
+# Test 11: Repository structure and modular architecture checks
 [[ -f "${SCRIPT_DIR}/README.md" ]] && assert_eq "0" "0" "README.md exists" || assert_eq "0" "1" "README.md exists"
 [[ -f "${SCRIPT_DIR}/LICENSE" ]] && assert_eq "0" "0" "LICENSE exists" || assert_eq "0" "1" "LICENSE exists"
 [[ -x "$BIN" ]] && assert_eq "0" "0" "build script is executable" || assert_eq "0" "1" "build script is executable"
+[[ -L "${SCRIPT_DIR}/build.sh" || -f "${SCRIPT_DIR}/build.sh" ]] && assert_eq "0" "0" "build.sh entry point exists" || assert_eq "0" "1" "build.sh entry point exists"
+
+for mod_name in ui.sh cleanup.sh cli.sh config.sh wizard.sh doctor.sh build.sh; do
+    [[ -f "${SCRIPT_DIR}/src/${mod_name}" ]] && assert_eq "0" "0" "src/${mod_name} exists" || assert_eq "0" "1" "src/${mod_name} exists"
+done
 
 echo ""
 printf "Summary: %d passed, %d failed\n" "$PASSED" "$FAILED"

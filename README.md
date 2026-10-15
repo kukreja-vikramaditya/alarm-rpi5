@@ -41,6 +41,27 @@ sudo ./build-alarm-rpi5.sh
 
 Output lands in `dist/`. That's it.
 
+## Project Structure
+
+The project is structured modularly with a single root entry point:
+
+```
+alarm-rpi5/
+├── build-alarm-rpi5.sh      # Primary root entry point
+├── build.sh                 # Convenience alias symlink
+├── src/
+│   ├── ui.sh                # Terminal UI styling, Gum detection, logging, spinners
+│   ├── cleanup.sh           # Safe EXIT/INT/TERM trap handler & idempotent cleanup
+│   ├── cli.sh               # Command line argument parser & usage help
+│   ├── config.sh            # Defaults, environment overrides, path calculation
+│   ├── wizard.sh            # Interactive setup wizards (Charm Gum + pure Bash fallback)
+│   ├── doctor.sh            # Environment diagnostics (--check) & preflight checks
+│   └── build.sh             # 5-phase image builder, pacstrap, chroot config & shrink
+├── tests/
+│   └── test_cli.sh          # Automated test suite (45 checks)
+└── dist/                    # Default output directory for generated images (.img.xz)
+```
+
 ## Usage
 
 ```
