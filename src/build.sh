@@ -307,7 +307,7 @@ finalize_image() {
 
     # ── Summary ──────────────────────────────────────────────────────
     if [[ "${USE_GUM:-0}" -eq 1 ]]; then
-        printf '\n'
+        echo ""
         "$GUM_BIN" style \
             --border double \
             --border-foreground 42 \
@@ -329,7 +329,7 @@ finalize_image() {
             "" \
             "First boot: connect Ethernet, SSH in, then:" \
             "  sudo pacman -Syu"
-        printf '\n'
+        echo ""
     else
         cat <<-SUMMARY
 

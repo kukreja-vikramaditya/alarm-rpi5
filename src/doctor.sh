@@ -20,20 +20,20 @@ check_environment() {
 
     # 1. Root / Privileges
     if [[ $EUID -eq 0 ]]; then
-        printf '  %-32s %s\n' "Root execution" "$(format_badge OK)"
+        "$GUM_BIN" log -l info "Root execution"
     elif sudo -n true 2>/dev/null; then
-        printf '  %-32s %s (passwordless sudo active)\n' "Root execution" "$(format_badge OK)"
+        "$GUM_BIN" log -l info "Root execution (passwordless sudo active)"
     else
-        printf '  %-32s %s (requires sudo password when building)\n' "Root execution" "$(format_badge INFO)"
+        "$GUM_BIN" log -l warn "Root execution (requires sudo password when building)"
     fi
 
     # 2. Host Commands
     local cmd
     for cmd in "${REQUIRED_CMDS[@]}"; do
         if command -v "$cmd" &>/dev/null; then
-            printf '  %-32s %s (%s)\n' "Tool: ${cmd}" "$(format_badge OK)" "$(command -v "$cmd")"
+            "$GUM_BIN" log -l info "Tool: ${cmd} ($(command -v "$cmd"))"
         else
-            printf '  %-32s %s -> install with: %s\n' "Tool: ${cmd}" "$(format_badge MISSING)" "$(get_pkg_for_cmd "$cmd")"
+            "$GUM_BIN" log -l error "Tool: ${cmd} -> install with: $(get_pkg_for_cmd "$cmd")"
             ((issues++)) || true
         fi
     done
@@ -41,37 +41,35 @@ check_environment() {
     # 3. Kernel binfmt_misc
     mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc 2>/dev/null || true
     if [[ -f /proc/sys/fs/binfmt_misc/qemu-aarch64 || -f /proc/sys/fs/binfmt_misc/aarch64 || -f /proc/sys/fs/binfmt_misc/arm64 ]]; then
-        printf '  %-32s %s\n' "binfmt: aarch64" "$(format_badge OK)"
+        "$GUM_BIN" log -l info "binfmt: aarch64"
     else
-        printf '  %-32s %s -> enable with: sudo systemctl restart systemd-binfmt.service\n' \
-            "binfmt: aarch64" "$(format_badge MISSING)"
+        "$GUM_BIN" log -l error "binfmt: aarch64 -> enable with: sudo systemctl restart systemd-binfmt.service"
         ((issues++)) || true
     fi
 
     # 4. QEMU static binary
     if [[ -x /usr/bin/qemu-aarch64-static ]]; then
-        printf '  %-32s %s\n' "Binary: qemu-aarch64-static" "$(format_badge OK)"
+        "$GUM_BIN" log -l info "Binary: qemu-aarch64-static"
     else
-        printf '  %-32s %s -> install with: sudo pacman -S qemu-user-static qemu-user-static-binfmt\n' \
-            "Binary: qemu-aarch64-static" "$(format_badge MISSING)"
+        "$GUM_BIN" log -l error "Binary: qemu-aarch64-static -> install with: sudo pacman -S qemu-user-static qemu-user-static-binfmt"
         ((issues++)) || true
     fi
 
     # 5. Mirror connectivity
     local mirror_url="${ALARM_MIRROR:-http://mirror.archlinuxarm.org}"
     if curl --head --silent --fail --connect-timeout 5 "${mirror_url}" &>/dev/null; then
-        printf '  %-32s %s (%s)\n' "ALARM mirror reachable" "$(format_badge OK)" "${mirror_url}"
+        "$GUM_BIN" log -l info "ALARM mirror reachable (${mirror_url})"
     else
-        printf '  %-32s %s (cannot connect to %s)\n' "ALARM mirror reachable" "$(format_badge WARN)" "${mirror_url}"
+        "$GUM_BIN" log -l warn "ALARM mirror reachable (cannot connect to ${mirror_url})"
     fi
 
     # 6. Output directory writable
     local out_dir="${OUTPUT_DIR:-${SCRIPT_DIR:-.}/dist}"
     mkdir -p -- "$out_dir" 2>/dev/null || true
     if [[ -w "$out_dir" ]]; then
-        printf '  %-32s %s (%s)\n' "Output dir writable" "$(format_badge OK)" "$out_dir"
+        "$GUM_BIN" log -l info "Output dir writable (${out_dir})"
     else
-        printf '  %-32s %s (%s is not writable)\n' "Output dir writable" "$(format_badge MISSING)" "$out_dir"
+        "$GUM_BIN" log -l error "Output dir writable (${out_dir} is not writable)"
         ((issues++)) || true
     fi
 

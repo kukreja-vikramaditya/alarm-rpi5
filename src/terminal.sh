@@ -40,6 +40,6 @@ format_badge() {
         MISSING) "$GUM_BIN" style --foreground 196 --bold "[MISSING]" ;;
         WARN) "$GUM_BIN" style --foreground 214 "[ WARN ]" ;;
         INFO) "$GUM_BIN" style --foreground 39 "[ INFO ]" ;;
-        *) printf '[%s]' "$type" ;;
+        *) "$GUM_BIN" style "[$type]" ;;
     esac
 }

@@ -53,7 +53,7 @@ log_error() {
 log_phase() {
     local _LOG_MSG
     _format_log_msg "$@"
-    printf '\n'
+    echo ""
     "$GUM_BIN" style --bold --foreground 212 "==> $_LOG_MSG"
 }
 

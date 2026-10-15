@@ -59,7 +59,7 @@ interactive_wizard_gum() {
 }
 
 interactive_wizard_bash() {
-    printf "\n=== 🧙 Interactive Configuration Wizard ===\n\n"
+    "$GUM_BIN" log -l info "=== 🧙 Interactive Configuration Wizard ==="
 
     local in_ver in_host in_root_user in_root_pw in_user in_user_pw in_size in_comp in_confirm
 
