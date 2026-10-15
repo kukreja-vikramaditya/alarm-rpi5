@@ -117,6 +117,7 @@ bootstrap_rootfs() {
         sudo
         nano
         e2fsprogs
+        parted
         git
         tmux
         zsh
@@ -179,6 +180,13 @@ configure_system() {
     mkdir -p -- "${ROOTFS}/etc/systemd/network"
     cp -- "${DATA_DIR}/20-wired.network" "${ROOTFS}/etc/systemd/network/20-wired.network"
 
+    # Deploy first-boot automatic root expansion service
+    mkdir -p -- "${ROOTFS}/usr/local/bin" "${ROOTFS}/etc/systemd/system"
+    cp -- "${DATA_DIR}/alarm-expand-root.sh" "${ROOTFS}/usr/local/bin/alarm-expand-root.sh"
+    chmod 755 "${ROOTFS}/usr/local/bin/alarm-expand-root.sh"
+    cp -- "${DATA_DIR}/alarm-expand-root.service" "${ROOTFS}/etc/systemd/system/alarm-expand-root.service"
+    chmod 644 "${ROOTFS}/etc/systemd/system/alarm-expand-root.service"
+
     # Ensure system config files have standard read permissions
     chmod 644 "${ROOTFS}/etc/hostname" "${ROOTFS}/etc/hosts" "${ROOTFS}/etc/locale.conf" "${ROOTFS}/etc/locale.gen" "${ROOTFS}/etc/pacman.conf" "${ROOTFS}/etc/fstab" "${ROOTFS}/etc/systemd/network/20-wired.network"
 
@@ -200,6 +208,9 @@ configure_system() {
 	# Enable native systemd networking (zero external dependencies)
 	systemctl enable systemd-networkd.service
 	systemctl enable systemd-resolved.service
+
+	# Enable first-boot root partition auto-expansion to 100% of disk
+	systemctl enable alarm-expand-root.service
 
 	# Enable SSH
 	systemctl enable sshd.service

@@ -1,0 +1,13 @@
+[Unit]
+Description=Expand root partition and ext4 filesystem to 100% of disk on first boot
+DefaultDependencies=no
+After=local-fs.target
+ConditionPathExists=!/etc/alarm-root-expanded
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/alarm-expand-root.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

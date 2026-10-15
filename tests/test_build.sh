@@ -94,6 +94,8 @@ assert_file_exists "${DATA_DIR}/sudoers-wheel" "sudoers-wheel exists in data/"
 assert_file_exists "${DATA_DIR}/locale.gen" "locale.gen exists in data/"
 assert_file_exists "${DATA_DIR}/locale.conf" "locale.conf exists in data/"
 assert_file_exists "${DATA_DIR}/20-wired.network" "20-wired.network exists in data/"
+assert_file_exists "${DATA_DIR}/alarm-expand-root.sh" "alarm-expand-root.sh exists in data/"
+assert_file_exists "${DATA_DIR}/alarm-expand-root.service" "alarm-expand-root.service exists in data/"
 
 # Test 4: Partition boundary math
 boot_size=256

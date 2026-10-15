@@ -90,6 +90,8 @@ alarm-rpi5/
 ├── build.sh                 # Convenience alias symlink
 ├── data/                    # Configuration templates and static files deployed to rootfs
 │   ├── 20-wired.network     # Wired Ethernet DHCP configuration (systemd-networkd)
+│   ├── alarm-expand-root.service # One-shot systemd service to expand partition on first boot
+│   ├── alarm-expand-root.sh # Root filesystem auto-expansion script
 │   ├── cmdline.txt          # Kernel boot cmdline parameters
 │   ├── config.txt           # Pi 5 bootloader configuration
 │   ├── fstab                # Partition mount definitions
