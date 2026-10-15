@@ -21,6 +21,9 @@ LOCALE="${LOCALE:-en_US.UTF-8}"
 EXTRA_PACKAGES="${EXTRA_PACKAGES:-}"
 ALARM_MIRROR="${ALARM_MIRROR:-http://mirror.archlinuxarm.org}"
 CUSTOM_IMG_NAME="${IMG_NAME:-}"
+if [[ -z "${DATA_DIR:-}" ]]; then
+    DATA_DIR="${SCRIPT_DIR:-.}/data"
+fi
 
 init_config() {
     IMG_SIZE="${_arg_img_size:-${IMG_SIZE:-4G}}"

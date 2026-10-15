@@ -52,6 +52,8 @@ assert_eq "1" "$COMPRESS" "init_config default COMPRESS is 1"
 assert_eq "256" "$BOOT_SIZE_MIB" "init_config default BOOT_SIZE_MIB is 256"
 assert_contains "$OUTPUT_DIR" "/dist" "init_config OUTPUT_DIR points to dist"
 assert_contains "$IMG_FILE" "alarm-rpi5-0.1.0-" "init_config IMG_FILE contains version"
+assert_contains "$DATA_DIR" "/data" "DATA_DIR points to data directory"
+assert_file_exists "${DATA_DIR}/fstab" "DATA_DIR contains fstab"
 
 # Test 3: CLI arguments override defaults
 _arg_version="1.5.0"

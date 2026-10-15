@@ -49,6 +49,16 @@ The project is structured modularly with a single root entry point:
 alarm-rpi5/
 ├── build-alarm-rpi5.sh      # Primary root entry point
 ├── build.sh                 # Convenience alias symlink
+├── data/                    # Configuration templates and static files deployed to rootfs
+│   ├── cmdline.txt          # Kernel boot cmdline parameters
+│   ├── config.txt           # Pi 5 bootloader configuration
+│   ├── fstab                # Partition mount definitions
+│   ├── hosts                # Local hostname mapping template
+│   ├── locale.conf          # System locale configuration template
+│   ├── locale.gen           # Locale generation definitions
+│   ├── pacman-bootstrap.conf# Temporary pacman config for pacstrap on host
+│   ├── pacman-runtime.conf  # Target pacman.conf with signature verification
+│   └── sudoers-wheel        # Sudo permissions for wheel group
 ├── src/
 │   ├── ui.sh                # Terminal UI styling, Gum detection, logging, spinners
 │   ├── cleanup.sh           # Safe EXIT/INT/TERM trap handler & idempotent cleanup
@@ -258,7 +268,7 @@ make ARCH=arm64 -j$(nproc) Image modules dtbs
 
 ## Testing
 
-Run all unit and integration test suites (9 suites, 205 automated checks across every module):
+Run all unit and integration test suites (9 suites, 213 automated checks across every module):
 
 ```bash
 ./tests/run_all.sh

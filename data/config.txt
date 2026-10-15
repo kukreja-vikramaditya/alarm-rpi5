@@ -1,0 +1,15 @@
+# Arch Linux ARM — Raspberry Pi 5
+# This file is read by the Pi firmware before the kernel boots.
+
+arm_64bit=1
+enable_uart=1
+
+# KMS video driver (standard for Pi 4/5)
+dtoverlay=vc4-kms-v3d
+
+# Uncomment to overclock (requires adequate cooling)
+#arm_freq=2800
+#over_voltage=6
+
+# Uncomment for USB boot (NVMe via M.2 HAT)
+#BOOT_ORDER=0xf416

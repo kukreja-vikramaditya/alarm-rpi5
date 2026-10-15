@@ -5,6 +5,7 @@
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." &>/dev/null && pwd)"
 readonly SCRIPT_DIR
 readonly SRC_DIR="${SCRIPT_DIR}/src"
+readonly DATA_DIR="${SCRIPT_DIR}/data"
 
 PASSED=0
 FAILED=0

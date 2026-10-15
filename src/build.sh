@@ -63,27 +63,9 @@ bootstrap_rootfs() {
     mkdir -p -- "${ROOTFS}/usr/bin"
     cp -- /usr/bin/qemu-aarch64-static "${ROOTFS}/usr/bin/"
 
-    # Write pacman config for aarch64 / ALARM repos
+    # Write pacman config for aarch64 / ALARM repos from data/ template
     PACMAN_CONF="$(mktemp -- /tmp/pacman-aarch64.XXXXXX.conf)"
-    cat >"${PACMAN_CONF}" <<-EOF
-	[options]
-	HoldPkg     = pacman glibc
-	Architecture = aarch64
-	CheckSpace
-	SigLevel    = Never
-
-	[core]
-	Server = ${ALARM_MIRROR}/\$arch/\$repo
-
-	[extra]
-	Server = ${ALARM_MIRROR}/\$arch/\$repo
-
-	[alarm]
-	Server = ${ALARM_MIRROR}/\$arch/\$repo
-
-	[aur]
-	Server = ${ALARM_MIRROR}/\$arch/\$repo
-	EOF
+    sed "s|@ALARM_MIRROR@|${ALARM_MIRROR}|g" "${DATA_DIR}/pacman-bootstrap.conf" >"${PACMAN_CONF}"
 
     # Base packages for a working RPi 5 system
     local -a packages=(
@@ -122,37 +104,12 @@ bootstrap_rootfs() {
 configure_boot() {
     log_phase "Phase 3/5 — Configure boot"
 
-    # fstab
-    cat >"${ROOTFS}/etc/fstab" <<-'EOF'
-	# <device>             <dir>    <type>  <options>          <dump> <pass>
-	/dev/mmcblk0p1         /boot    vfat    defaults           0      2
-	/dev/mmcblk0p2         /        ext4    defaults,noatime   0      1
-	EOF
+    mkdir -p -- "${ROOTFS}/etc" "${ROOTFS}/boot"
+    cp -- "${DATA_DIR}/fstab" "${ROOTFS}/etc/fstab"
+    cp -- "${DATA_DIR}/cmdline.txt" "${ROOTFS}/boot/cmdline.txt"
+    cp -- "${DATA_DIR}/config.txt" "${ROOTFS}/boot/config.txt"
 
-    # Kernel command line
-    printf '%s\n' "root=/dev/mmcblk0p2 rw rootwait console=tty1 console=ttyAMA10,115200" \
-        >"${ROOTFS}/boot/cmdline.txt"
-
-    # Pi 5 config.txt
-    cat >"${ROOTFS}/boot/config.txt" <<-'EOF'
-	# Arch Linux ARM — Raspberry Pi 5
-	# This file is read by the Pi firmware before the kernel boots.
-
-	arm_64bit=1
-	enable_uart=1
-
-	# KMS video driver (standard for Pi 4/5)
-	dtoverlay=vc4-kms-v3d
-
-	# Uncomment to overclock (requires adequate cooling)
-	#arm_freq=2800
-	#over_voltage=6
-
-	# Uncomment for USB boot (NVMe via M.2 HAT)
-	#BOOT_ORDER=0xf416
-	EOF
-
-    log_info "Boot config written (config.txt, cmdline.txt, fstab)"
+    log_info "Boot config written (config.txt, cmdline.txt, fstab from data/)"
 }
 
 # ──────────────────────────────────────────────────────────────────────
@@ -161,6 +118,19 @@ configure_boot() {
 configure_system() {
     log_phase "Phase 4/5 — Configure system (chroot)"
 
+    # Deploy system configuration files from data/ templates
+    sed "s|@LOCALE@|${LOCALE}|g" "${DATA_DIR}/locale.gen" >"${ROOTFS}/etc/locale.gen"
+    sed "s|@LOCALE@|${LOCALE}|g" "${DATA_DIR}/locale.conf" >"${ROOTFS}/etc/locale.conf"
+    sed "s|@TARGET_HOSTNAME@|${TARGET_HOSTNAME}|g" "${DATA_DIR}/hosts" >"${ROOTFS}/etc/hosts"
+    printf '%s\n' "${TARGET_HOSTNAME}" >"${ROOTFS}/etc/hostname"
+
+    mkdir -p -- "${ROOTFS}/etc/sudoers.d"
+    cp -- "${DATA_DIR}/sudoers-wheel" "${ROOTFS}/etc/sudoers.d/wheel"
+    chmod 440 "${ROOTFS}/etc/sudoers.d/wheel"
+
+    sed "s|@ALARM_MIRROR@|${ALARM_MIRROR}|g" "${DATA_DIR}/pacman-runtime.conf" >"${ROOTFS}/etc/pacman.conf"
+
+    # Execute system setup inside chroot
     arch-chroot "${ROOTFS}" /bin/bash <<-CHROOT
 	set -euo pipefail
 
@@ -172,17 +142,7 @@ configure_system() {
 	ln -sf "/usr/share/zoneinfo/${TIMEZONE}" /etc/localtime
 
 	# Locale
-	printf '%s\n' "${LOCALE} UTF-8" > /etc/locale.gen
 	locale-gen
-	printf '%s\n' "LANG=${LOCALE}" > /etc/locale.conf
-
-	# Hostname
-	printf '%s\n' "${TARGET_HOSTNAME}" > /etc/hostname
-	cat > /etc/hosts <<-HOSTS
-	127.0.0.1   localhost
-	::1         localhost
-	127.0.1.1   ${TARGET_HOSTNAME}
-	HOSTS
 
 	# Enable services
 	systemctl enable sshd.service
@@ -194,34 +154,10 @@ configure_system() {
 	# Create user
 	useradd -m -G wheel -s /bin/bash "${ALARM_USER}"
 	printf '%s\n' "${ALARM_USER}:${ALARM_PASSWORD}" | chpasswd
-	printf '%s\n' "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
-	chmod 440 /etc/sudoers.d/wheel
-
-	# Write runtime pacman.conf (with signature verification)
-	cat > /etc/pacman.conf <<-'PACCONF'
-	[options]
-	HoldPkg     = pacman glibc
-	Architecture = aarch64
-	CheckSpace
-	SigLevel    = Required DatabaseOptional
-	LocalFileSigLevel = Optional
-
-	[core]
-	Server = ${ALARM_MIRROR}/\$arch/\$repo
-
-	[extra]
-	Server = ${ALARM_MIRROR}/\$arch/\$repo
-
-	[alarm]
-	Server = ${ALARM_MIRROR}/\$arch/\$repo
-
-	[aur]
-	Server = ${ALARM_MIRROR}/\$arch/\$repo
-	PACCONF
 
 	# Clean pacman cache to reduce image size
 	pacman -Scc --noconfirm
-	CHROOT
+CHROOT
 
     log_info "System configuration complete"
 }

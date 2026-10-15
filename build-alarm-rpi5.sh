@@ -17,6 +17,7 @@ readonly SCRIPT_DIR
 SCRIPT_NAME="$(basename -- "${BASH_SOURCE[0]}")"
 readonly SCRIPT_NAME
 readonly SRC_DIR="${SCRIPT_DIR}/src"
+readonly DATA_DIR="${SCRIPT_DIR}/data"
 
 # Source modular components
 # shellcheck source=src/ui.sh
