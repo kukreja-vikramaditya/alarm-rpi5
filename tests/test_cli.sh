@@ -139,6 +139,26 @@ for mod_name in ui.sh cleanup.sh cli.sh config.sh wizard.sh doctor.sh build.sh; 
     [[ -f "${SCRIPT_DIR}/src/${mod_name}" ]] && assert_eq "0" "0" "src/${mod_name} exists" || assert_eq "0" "1" "src/${mod_name} exists"
 done
 
+# Test 12: Resource cleanup removes temporary files and directories
+(
+    # shellcheck source=src/ui.sh
+    source "${SCRIPT_DIR}/src/ui.sh"
+    # shellcheck source=src/cleanup.sh
+    source "${SCRIPT_DIR}/src/cleanup.sh"
+
+    test_conf="$(mktemp /tmp/pacman-aarch64.testXXXXXX.conf)"
+    test_rootfs="$(mktemp -d /tmp/alarm-rootfs.testXXXXXX)"
+
+    PACMAN_CONF="$test_conf"
+    ROOTFS="$test_rootfs"
+
+    # Execute cleanup
+    cleanup
+
+    [[ ! -f "$test_conf" ]] && assert_eq "0" "0" "cleanup removes PACMAN_CONF" || assert_eq "0" "1" "cleanup removes PACMAN_CONF"
+    [[ ! -d "$test_rootfs" ]] && assert_eq "0" "0" "cleanup removes ROOTFS mount directory" || assert_eq "0" "1" "cleanup removes ROOTFS mount directory"
+)
+
 echo ""
 printf "Summary: %d passed, %d failed\n" "$PASSED" "$FAILED"
 

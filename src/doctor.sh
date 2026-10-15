@@ -108,6 +108,9 @@ preflight() {
         die "This script must be run as root (or via sudo)."
     fi
 
+    # Clean any stale debris from past interrupted runs
+    clean_stale_temp_files
+
     # Enforce host commands
     local -a missing=()
     local cmd

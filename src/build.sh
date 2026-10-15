@@ -95,6 +95,13 @@ bootstrap_rootfs() {
 
     log_info "Installing packages: ${packages[*]}"
     pacstrap -M -G -C "${PACMAN_CONF}" "${ROOTFS}" "${packages[@]}"
+
+    # Clean up temporary pacstrap config immediately
+    if [[ -n "${PACMAN_CONF}" && -f "${PACMAN_CONF}" ]]; then
+        rm -f -- "${PACMAN_CONF}"
+        PACMAN_CONF=""
+        log_info "Cleaned up temporary pacstrap config"
+    fi
 }
 
 # ──────────────────────────────────────────────────────────────────────
@@ -216,15 +223,24 @@ finalize_image() {
     # Remove qemu binary (not needed on real hardware)
     rm -f -- "${ROOTFS}/usr/bin/qemu-aarch64-static"
 
-    # Sync and unmount
+    # Sync and unmount cleanly with fallback
     sync
-    umount -- "${ROOTFS}/boot"
-    umount -- "${ROOTFS}"
-    rm -rf -- "${ROOTFS}"
+    if mountpoint -q "${ROOTFS}/boot" 2>/dev/null; then
+        umount -- "${ROOTFS}/boot" 2>/dev/null || umount -l "${ROOTFS}/boot" 2>/dev/null
+    fi
+    if mountpoint -q "${ROOTFS}" 2>/dev/null; then
+        umount -- "${ROOTFS}" 2>/dev/null || umount -l "${ROOTFS}" 2>/dev/null
+    fi
+    if [[ -d "${ROOTFS}" ]]; then
+        rm -rf -- "${ROOTFS}"
+        log_info "Cleaned up temporary rootfs mount directory"
+    fi
     ROOTFS=""
 
-    losetup -d "${LOOP}"
-    LOOP=""
+    if [[ -n "${LOOP}" ]]; then
+        losetup -d "${LOOP}" 2>/dev/null || true
+        LOOP=""
+    fi
 
     # ── Shrink ext4 filesystem to minimum ────────────────────────────
     LOOP="$(losetup --find --show --partscan -- "${IMG_FILE}")"
@@ -270,6 +286,10 @@ finalize_image() {
     fi
 
     FINAL_BUILT_FILE="${final_file}"
+
+    # ── Verify temporary cleanup ─────────────────────────────────────
+    clean_stale_temp_files
+    log_info "All temporary build files and mounts in /tmp cleaned up"
 
     # ── Summary ──────────────────────────────────────────────────────
     if [[ "${USE_GUM:-0}" -eq 1 ]]; then
