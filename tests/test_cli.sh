@@ -157,6 +157,15 @@ done
 
     [[ ! -f "$test_conf" ]] && assert_eq "0" "0" "cleanup removes PACMAN_CONF" || assert_eq "0" "1" "cleanup removes PACMAN_CONF"
     [[ ! -d "$test_rootfs" ]] && assert_eq "0" "0" "cleanup removes ROOTFS mount directory" || assert_eq "0" "1" "cleanup removes ROOTFS mount directory"
+
+    # Test pre-run cleanup of orphaned files from earlier interrupted runs
+    stale_conf="$(mktemp /tmp/pacman-aarch64.staleXXXXXX.conf)"
+    stale_dir="$(mktemp -d /tmp/alarm-rootfs.staleXXXXXX)"
+
+    cleanup_previous_run
+
+    [[ ! -f "$stale_conf" ]] && assert_eq "0" "0" "cleanup_previous_run sweeps stale pacman confs" || assert_eq "0" "1" "cleanup_previous_run sweeps stale pacman confs"
+    [[ ! -d "$stale_dir" ]] && assert_eq "0" "0" "cleanup_previous_run sweeps stale rootfs dirs" || assert_eq "0" "1" "cleanup_previous_run sweeps stale rootfs dirs"
 )
 
 echo ""

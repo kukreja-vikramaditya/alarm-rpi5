@@ -62,20 +62,60 @@ main() {
         fi
     fi
 
-    # 5. Initialize configuration (flags > env > defaults)
+    # 5. Clean up any lingering resources from previous runs BEFORE setup begins
+    cleanup_previous_run
+
+    # 6. Initialize configuration (flags > env > defaults)
     init_config
 
-    # 6. Preflight checks (tools, binfmt, qemu)
+    # 7. Preflight checks (tools, binfmt, qemu)
     preflight
 
-    # 7. Interactive wizard (only runs once root and tools are verified!)
+    # 8. Interactive wizard (only runs once root and tools are verified!)
     if [[ -z "${_arg_non_interactive}" ]]; then
         interactive_wizard
     fi
 
-    # 8. Overwrite guard for configured output file
-    if [[ -f "${IMG_FILE}" || -f "${IMG_FILE}.xz" ]]; then
-        die "Output already exists: ${IMG_FILE}(.xz). Remove it first or change --version."
+    # 9. Check if previous run left output artifacts
+    local existing_target=""
+    if [[ -f "${IMG_FILE}.xz" ]]; then
+        existing_target="${IMG_FILE}.xz"
+    elif [[ -f "${IMG_FILE}" ]]; then
+        existing_target="${IMG_FILE}"
+    fi
+
+    if [[ -n "${existing_target}" ]]; then
+        if [[ -t 0 && -t 1 && -z "${_arg_non_interactive:-}" ]]; then
+            log_warn "Output artifact from a previous run exists: ${existing_target}"
+            local overwrite_confirm=0
+            if [[ "${USE_GUM:-0}" -eq 1 ]]; then
+                if "$GUM_BIN" confirm "Overwrite previous build artifact?"; then
+                    overwrite_confirm=1
+                fi
+            else
+                local reply
+                read -r -p "Overwrite previous build artifact? (y/n) [n]: " reply
+                if [[ "$reply" =~ ^[Yy] ]]; then
+                    overwrite_confirm=1
+                fi
+            fi
+
+            if [[ $overwrite_confirm -eq 1 ]]; then
+                log_info "Removing previous build artifact: ${existing_target}"
+                if command -v losetup &>/dev/null; then
+                    local ldev
+                    while read -r ldev; do
+                        [[ -n "$ldev" ]] && losetup -d "$ldev" 2>/dev/null || true
+                    done < <(losetup -j "${IMG_FILE}" 2>/dev/null | cut -d: -f1)
+                fi
+                rm -f -- "${IMG_FILE}" "${IMG_FILE}.xz"
+            else
+                echo "Build cancelled by user (will not overwrite existing output)."
+                exit 0
+            fi
+        else
+            die "Output already exists: ${existing_target}. Remove it first or change --version."
+        fi
     fi
 
     gum_banner
