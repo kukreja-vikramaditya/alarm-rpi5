@@ -45,7 +45,7 @@ The built image is pre-configured with default credentials and passwordless `sud
 An **x86_64 Arch Linux** host (bare metal, VM, or container).
 
 ```bash
-sudo pacman -S --needed \
+sudo pacman -S --needed --noconfirm \
   qemu-user-static qemu-user-static-binfmt \
   arch-install-scripts \
   dosfstools e2fsprogs \
@@ -243,13 +243,124 @@ The Pi 5 supports NVMe boot natively. Flash to your NVMe drive instead of SD, an
    ```
 4. Update immediately:
    ```bash
-   sudo pacman -Syu
+   sudo pacman -Syu --noconfirm
    ```
 5. Change default passwords:
    ```bash
    passwd                  # change alarm's password
    sudo passwd root        # change root's password
    ```
+
+## Installing a Desktop Environment (UI)
+
+The base image boots into a minimal command-line interface. To install a graphical desktop environment with hardware acceleration on your Raspberry Pi 5, follow the steps below.
+
+### Key Concepts: How Linux GUI Fits Together
+
+If you are new to Arch Linux or Linux desktop stacks, here is how the pieces work together:
+
+| Layer | Component | What It Does | Example |
+| :--- | :--- | :--- | :--- |
+| **Graphics Driver** | DRM / Mesa | Translates OpenGL/Vulkan graphics commands directly into hardware instructions for the Pi 5 VideoCore VII GPU. | `mesa`, `libdrm` |
+| **Display Server / Protocol** | Wayland or X11 | The communication protocol that manages windows, screen buffers, mouse clicks, and keystrokes. | Wayland (native on Pi 5) or `xorg-server` |
+| **Display Manager (DM)** | System Service | The background daemon that starts on boot and handles user authentication and session startup. Without this, you only get a text terminal login prompt (`login:`). | `lightdm`, `sddm`, `gdm` |
+| **Greeter** | Login Screen UI | The visual login screen box (rendered by the Display Manager) where you type your username/password and choose your desktop session. | `lightdm-gtk-greeter` |
+| **Desktop Environment (DE)** | Full Interface | The user-facing software suite: taskbar, app launcher, window borders, wallpaper, file manager, and system settings. | `xfce4`, `plasma-desktop`, `gnome` |
+
+---
+
+### Step 1: Install Core GPU Drivers, Fonts & Audio
+
+```bash
+sudo pacman -Syu --needed --noconfirm \
+  mesa libdrm xf86-video-fbdev \
+  ttf-dejavu ttf-liberation noto-fonts \
+  pipewire pipewire-pulse wireplumber
+```
+
+#### What each package does:
+* **`mesa`**: The open-source 3D graphics library. Provides the `v3d` driver that enables hardware OpenGL and Vulkan acceleration on the Raspberry Pi 5's VideoCore VII GPU. Without Mesa, window rendering falls back to slow software emulation on the CPU.
+* **`libdrm`**: Direct Rendering Manager library. A low-level userspace library that lets programs talk directly to the Linux kernel graphics subsystem to allocate display buffers and manage video modes.
+* **`xf86-video-fbdev`**: Generic fallback framebuffer 2D driver for X11, ensuring a display output is always available even if a custom 3D mode fails.
+* **`ttf-dejavu`, `ttf-liberation`, `noto-fonts`**: High-quality TrueType fonts covering Latin and international character sets. Without fonts installed, web browsers and UI apps render blank boxes ("tofu") instead of text.
+* **`pipewire`**: Modern, low-latency multimedia routing framework that handles sound playback and microphone input.
+* **`pipewire-pulse`**: Drop-in PulseAudio compatibility layer that allows standard audio applications (browsers, Spotify, media players) to play sound through PipeWire seamlessly.
+* **`wireplumber`**: The modular session manager for PipeWire that dynamically switches between audio devices (e.g., HDMI audio, 3.5mm, USB headsets, or Bluetooth).
+
+---
+
+### Step 2: Choose and Install a Desktop Environment
+
+#### Option A: XFCE (Lightweight & Stable — Recommended)
+Extremely fast, minimal RAM footprint (~300MB idle), and rock-solid:
+
+```bash
+sudo pacman -S --needed --noconfirm \
+  xfce4 xfce4-goodies \
+  lightdm lightdm-gtk-greeter \
+  xorg-server xorg-xinit
+
+sudo systemctl enable lightdm.service
+sudo reboot
+```
+
+* **`xfce4`**: The core desktop environment meta-package containing the window manager (`xfwm4`), desktop background/icon manager (`xfdesktop`), application launcher panel (`xfce4-panel`), and session coordinator.
+* **`xfce4-goodies`**: Useful companion plugins and utilities (task manager, battery monitor, screenshot utility, text editor, and image viewer).
+* **`lightdm`**: **Light Display Manager**. A fast, lightweight background service that starts the graphical environment at boot and coordinates user logins.
+* **`lightdm-gtk-greeter`**: The visual GTK-based login screen UI rendered by LightDM where you enter your username and password.
+* **`xorg-server`**: The traditional X11 display server required by X11-based desktops like XFCE.
+* **`xorg-xinit`**: Utility for launching and configuring manual X11 sessions (provides `startx`).
+
+---
+
+#### Option B: KDE Plasma (Modern, Hardware-Accelerated Wayland)
+Feature-rich, highly customizable desktop that runs natively on Wayland with full hardware acceleration on the Pi 5:
+
+```bash
+sudo pacman -S --needed --noconfirm \
+  plasma-desktop plasma-wayland-session plasma-workspace \
+  konsole dolphin sddm
+
+sudo systemctl enable sddm.service
+sudo reboot
+```
+
+* **`plasma-desktop`**: The core KDE Plasma desktop shell (desktop canvas, taskbar panel, system tray, and desktop widgets).
+* **`plasma-wayland-session`**: Enables Plasma to run on **Wayland** (the modern, tearing-free display protocol) taking direct advantage of the Pi 5's `v3d` GPU driver.
+* **`plasma-workspace`**: Supporting desktop services (lock screen, notification server, window switcher, and clipboard manager).
+* **`konsole`**: KDE's feature-packed terminal emulator.
+* **`dolphin`**: KDE's graphical file manager.
+* **`sddm`**: **Simple Desktop Display Manager**. The default display and login manager developed for modern KDE Plasma and Wayland sessions.
+
+---
+
+#### Option C: GNOME (Polished & Touch-Friendly Wayland Desktop)
+A clean, tablet/touch-friendly desktop environment:
+
+```bash
+sudo pacman -S --needed --noconfirm gnome gdm
+
+sudo systemctl enable gdm.service
+sudo reboot
+```
+
+* **`gnome`**: Meta-package containing GNOME Shell, the Mutter compositor/window manager, Nautilus file manager, GNOME Settings, and core apps.
+* **`gdm`**: **GNOME Display Manager**. The native login and lock screen manager for GNOME with built-in Wayland support.
+
+---
+
+### Step 3: Verify Hardware Acceleration
+After logging into your desktop environment, open a terminal and verify that the Broadcom VideoCore VII GPU is actively rendering graphics:
+
+```bash
+glxinfo | grep -E "(OpenGL renderer|OpenGL vendor)"
+```
+
+Expected output:
+```text
+OpenGL vendor string: Broadcom
+OpenGL renderer string: V3D 7.1
+```
 
 ## What's inside
 
