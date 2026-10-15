@@ -54,6 +54,7 @@ Usage: sudo ./${SCRIPT_NAME} [OPTIONS]
 Build an Arch Linux ARM image for Raspberry Pi 5.
 
 Options:
+  -c, --check            Check host environment and dependencies without building
   -o, --output-dir DIR   Output directory       (default: ${SCRIPT_DIR}/dist)
   -v, --version VER      Image version string   (default: 0.1.0)
   -s, --img-size SIZE    Raw image size         (default: 4G)
@@ -67,6 +68,7 @@ Environment overrides (lower precedence than flags):
   EXTRA_PACKAGES, ALARM_MIRROR, COMPRESS
 
 Examples:
+  ./${SCRIPT_NAME} --check
   sudo ./${SCRIPT_NAME}
   sudo ./${SCRIPT_NAME} -o /mnt/build -v 1.0.0
   EXTRA_PACKAGES="git htop" sudo ./${SCRIPT_NAME}
@@ -76,6 +78,7 @@ USAGE
 # ──────────────────────────────────────────────────────────────────────
 # Argument parsing
 # ──────────────────────────────────────────────────────────────────────
+_arg_check=""
 _arg_output_dir=""
 _arg_version=""
 _arg_img_size=""
@@ -84,6 +87,8 @@ _arg_no_compress=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        -c|--check)
+            _arg_check=1; shift ;;
         -o|--output-dir)
             [[ -n "${2:-}" ]] || die "Missing argument for $1"
             _arg_output_dir="$2"; shift 2 ;;
@@ -183,14 +188,100 @@ cleanup() {
         rm -f -- "${PACMAN_CONF}"
     fi
 
-    if [[ $exit_code -ne 0 ]]; then
-        log_error "Build failed (exit code ${exit_code}). Partial artifacts may remain at: ${OUTPUT_DIR}/"
+    if [[ $exit_code -ne 0 && -z "${_arg_check:-}" ]]; then
+        if [[ -n "${IMG_FILE:-}" && -f "${IMG_FILE}" ]]; then
+            log_error "Build failed (exit code ${exit_code}). Partial artifacts may remain at: ${IMG_FILE}"
+        fi
     fi
 
     return "$exit_code"
 }
 
 trap cleanup EXIT INT TERM
+
+# ──────────────────────────────────────────────────────────────────────
+# Package mapping for diagnostics
+# ──────────────────────────────────────────────────────────────────────
+get_pkg_for_cmd() {
+    case "$1" in
+        parted)                              echo "sudo pacman -S parted" ;;
+        mkfs.vfat)                          echo "sudo pacman -S dosfstools" ;;
+        pacstrap|arch-chroot)               echo "sudo pacman -S arch-install-scripts" ;;
+        mkfs.ext4|e2fsck|resize2fs|dumpe2fs) echo "sudo pacman -S e2fsprogs" ;;
+        losetup)                            echo "sudo pacman -S util-linux" ;;
+        xz)                                 echo "sudo pacman -S xz" ;;
+        truncate|numfmt)                    echo "sudo pacman -S coreutils" ;;
+        *)                                  echo "pacman -S package providing $1" ;;
+    esac
+}
+
+# ──────────────────────────────────────────────────────────────────────
+# Environment check / diagnostic mode (--check)
+# ──────────────────────────────────────────────────────────────────────
+check_environment() {
+    log_phase "Host Environment Diagnostics"
+    local issues=0
+
+    # 1. Root / Privileges
+    if [[ $EUID -eq 0 ]]; then
+        printf '  %-32s [%s]\n' "Root execution" "OK"
+    elif sudo -n true 2>/dev/null; then
+        printf '  %-32s [%s] (passwordless sudo available)\n' "Root execution" "OK"
+    else
+        printf '  %-32s [%s] (requires sudo password when building)\n' "Root execution" "INFO"
+    fi
+
+    # 2. Required external commands
+    for cmd in "${REQUIRED_CMDS[@]}"; do
+        if command -v "$cmd" &>/dev/null; then
+            printf '  %-32s [%s] (%s)\n' "Tool: $cmd" "OK" "$(command -v "$cmd")"
+        else
+            printf '  %-32s [%s] -> install with: %s\n' "Tool: $cmd" "MISSING" "$(get_pkg_for_cmd "$cmd")"
+            ((issues++)) || true
+        fi
+    done
+
+    # 3. binfmt_misc emulation
+    if [[ -f /proc/sys/fs/binfmt_misc/qemu-aarch64 ]]; then
+        printf '  %-32s [%s]\n' "binfmt: qemu-aarch64" "OK"
+    else
+        printf '  %-32s [%s] -> enable with: sudo systemctl restart systemd-binfmt.service\n' "binfmt: qemu-aarch64" "MISSING"
+        ((issues++)) || true
+    fi
+
+    # 4. static qemu binary
+    if [[ -f /usr/bin/qemu-aarch64-static ]]; then
+        printf '  %-32s [%s]\n' "Binary: qemu-aarch64-static" "OK"
+    else
+        printf '  %-32s [%s] -> install with: sudo pacman -S qemu-user-static qemu-user-static-binfmt\n' "Binary: qemu-aarch64-static" "MISSING"
+        ((issues++)) || true
+    fi
+
+    # 5. ALARM mirror reachable
+    if command -v curl &>/dev/null; then
+        if curl -sI --max-time 5 "${ALARM_MIRROR}" &>/dev/null; then
+            printf '  %-32s [%s] (%s)\n' "ALARM mirror reachable" "OK" "${ALARM_MIRROR}"
+        else
+            printf '  %-32s [%s] (%s unreachable)\n' "ALARM mirror reachable" "WARN" "${ALARM_MIRROR}"
+        fi
+    fi
+
+    # 6. Output directory writable
+    if [[ -d "${OUTPUT_DIR}" && -w "${OUTPUT_DIR}" ]]; then
+        printf '  %-32s [%s] (%s)\n' "Output dir writable" "OK" "${OUTPUT_DIR}"
+    else
+        printf '  %-32s [%s] (%s)\n' "Output dir writable" "WARN" "${OUTPUT_DIR}"
+    fi
+
+    echo ""
+    if [[ $issues -eq 0 ]]; then
+        log_info "All prerequisite checks passed. Environment is ready to build!"
+        return 0
+    else
+        log_warn "${issues} prerequisite(s) missing. Install missing packages before running the build."
+        return 1
+    fi
+}
 
 # ──────────────────────────────────────────────────────────────────────
 # Preflight checks
@@ -513,6 +604,11 @@ finalize_image() {
 # Main
 # ──────────────────────────────────────────────────────────────────────
 main() {
+    if [[ -n "${_arg_check}" ]]; then
+        check_environment
+        return $?
+    fi
+
     local start_time
     start_time="$(date +%s)"
 

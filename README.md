@@ -47,6 +47,7 @@ Output lands in `dist/`. That's it.
 sudo ./build-alarm-rpi5.sh [OPTIONS]
 
 Options:
+  -c, --check            Check host environment and dependencies without building
   -o, --output-dir DIR   Output directory       (default: ./dist)
   -v, --version VER      Image version string   (default: 0.1.0)
   -s, --img-size SIZE    Raw image size         (default: 4G)
@@ -58,6 +59,9 @@ Options:
 ### Examples
 
 ```bash
+# Check if host environment has required tools & setup
+./build-alarm-rpi5.sh --check
+
 # Default build
 sudo ./build-alarm-rpi5.sh
 
@@ -208,6 +212,20 @@ git clone --depth=1 https://github.com/raspberrypi/linux.git -b rpi-6.6.y
 cd linux
 make ARCH=arm64 bcm2712_defconfig
 make ARCH=arm64 -j$(nproc) Image modules dtbs
+```
+
+## Testing
+
+Run the automated test suite:
+
+```bash
+./tests/test_cli.sh
+```
+
+To run diagnostic checks on your host system:
+
+```bash
+./build-alarm-rpi5.sh --check
 ```
 
 ## License
