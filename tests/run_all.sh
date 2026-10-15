@@ -17,7 +17,6 @@ SUITES=(
     "test_lint.sh"       # Linter and formatting validation
     "test_terminal.sh"   # src/terminal.sh
     "test_logger.sh"     # src/logger.sh
-    "test_ui.sh"         # src/ui.sh (facade)
     "test_cleanup.sh"    # src/cleanup.sh
     "test_cli.sh"        # src/cli.sh
     "test_config.sh"     # src/config.sh

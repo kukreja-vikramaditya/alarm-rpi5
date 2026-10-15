@@ -16,8 +16,10 @@ else
 fi
 
 # Source dependencies
-# shellcheck source=src/ui.sh
-source "${SRC_DIR}/ui.sh"
+# shellcheck source=src/terminal.sh
+source "${SRC_DIR}/terminal.sh"
+# shellcheck source=src/logger.sh
+source "${SRC_DIR}/logger.sh"
 # shellcheck source=src/config.sh
 source "${SRC_DIR}/config.sh"
 # shellcheck source=src/wizard.sh
