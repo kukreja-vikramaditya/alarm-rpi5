@@ -18,6 +18,28 @@ Flash it with RPi Imager → **"Use custom"**, or with `dd`:
 xzcat dist/alarm-rpi5-*.img.xz | sudo dd of=/dev/sdX bs=4M status=progress
 ```
 
+## Default Usernames & Passwords
+
+The built image is pre-configured with default credentials and passwordless `sudo` privileges for the `wheel` group:
+
+| Account | Username | Default Password | Privileges / Group | SSH Access |
+| :--- | :--- | :--- | :--- | :--- |
+| **Standard User** | `alarm` | `alarm` | `wheel` (`sudo` privileges) | Enabled |
+| **Root User** | `root` | `root` | Superuser / Administrator | Enabled |
+
+> [!TIP]
+> **Customizing Credentials During Build:**
+> - **Interactive Wizard:** Run `./docker-build.sh` or `sudo ./build-alarm-rpi5.sh` without `-y` to customize usernames and passwords interactively.
+> - **Environment Variables:** Set `ALARM_USER`, `ALARM_PASSWORD`, `ROOT_USER`, and `ROOT_PASSWORD` (e.g., `ALARM_USER=myuser ALARM_PASSWORD=mypass ./docker-build.sh -y`).
+
+> [!IMPORTANT]
+> **Security Notice:**
+> Always change default passwords upon your first login:
+> ```bash
+> passwd             # Changes password for current user (alarm)
+> sudo passwd root   # Changes password for root
+> ```
+
 ## Requirements
 
 An **x86_64 Arch Linux** host (bare metal, VM, or container).

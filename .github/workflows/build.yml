@@ -149,6 +149,12 @@ jobs:
             3. Click **Choose OS** → scroll to the bottom → **Use custom** → select the `.img.xz` file.
             4. Click **Choose Storage** → pick your SD card or NVMe drive → click **Write**.
             5. Insert the card into your Raspberry Pi 5, connect Ethernet, and power on!
+
+            ### Default Credentials
+            | Account | Username | Password | Privileges |
+            | :--- | :--- | :--- | :--- |
+            | **Standard User** | `alarm` | `alarm` | `wheel` (`sudo` privileges) |
+            | **Root User** | `root` | `root` | Superuser / Administrator |
           files: dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
