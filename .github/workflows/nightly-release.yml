@@ -1,0 +1,153 @@
+name: Scheduled Rolling Build
+
+on:
+  schedule:
+    # Run bi-weekly on the 1st and 15th of every month at 03:00 UTC
+    - cron: '0 3 1,15 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Lint & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install ShellCheck, shfmt & Charm Gum
+        run: |
+          sudo mkdir -p /etc/apt/keyrings
+          curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg
+          echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
+          sudo apt-get update
+          sudo apt-get install -y shellcheck shfmt gum
+
+      - name: Run test suites (10 suites)
+        run: ./tests/run_all.sh
+
+  build:
+    name: Build & Publish Rolling Snapshot
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Free runner disk space
+        run: |
+          echo "Freeing disk space on runner..."
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost
+          df -h /
+
+      - name: Set up QEMU binfmt emulation
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Prepare loop devices on host
+        run: |
+          echo "Loading loop kernel module..."
+          sudo modprobe loop max_part=8 || true
+          ls -la /dev/loop* || true
+
+      - name: Build ALARM image inside Arch Linux container
+        run: |
+          set -o pipefail
+          echo "==> Building container builder image from Dockerfile..."
+          docker build -t alarm-rpi5-builder . 2>&1 | tee docker-build.log
+
+          echo "==> Running ALARM image build inside container..."
+          docker run --rm --privileged \
+            -v /dev:/dev \
+            -v /sys:/sys \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -w /workspace \
+            alarm-rpi5-builder -y 2>&1 | tee image-build.log
+
+      - name: Push failure log on error
+        if: failure()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan ci-debug-log || git checkout ci-debug-log
+          git rm -rf . || true
+          {
+            echo "================================================="
+            echo "DOCKER BUILD LOG"
+            echo "================================================="
+            cat docker-build.log 2>&1 || true
+            echo ""
+            echo "================================================="
+            echo "IMAGE BUILD LOG"
+            echo "================================================="
+            cat image-build.log 2>&1 || true
+          } > failure-log.txt
+          git add failure-log.txt
+          git commit -m "ci: capture failure logs [skip ci]" || true
+          git push -f origin ci-debug-log || true
+
+      - name: Generate SHA-256 Checksums
+        id: checksums
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" dist
+          sudo chmod -R 755 dist
+          cd dist
+          sha256sum *.img.xz > SHA256SUMS
+          cat SHA256SUMS
+          IMAGE_FILE="$(ls *.img.xz | head -n 1)"
+          echo "image_file=${IMAGE_FILE}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Artifact to Workflow Run
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.checksums.outputs.image_file }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Determine Release Metadata
+        id: meta
+        run: |
+          SNAPSHOT_DATE="$(date -u +'%Y-%m-%d')"
+          echo "snapshot_date=${SNAPSHOT_DATE}" >> "$GITHUB_OUTPUT"
+          echo "release_name=Rolling Snapshot (${SNAPSHOT_DATE})" >> "$GITHUB_OUTPUT"
+
+      - name: Publish Rolling Snapshot to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-snapshot
+          name: ${{ steps.meta.outputs.release_name }}
+          prerelease: false
+          make_latest: false
+          body: |
+            ## Arch Linux ARM for Raspberry Pi 5 — Rolling Snapshot
+
+            Automated bi-weekly rolling build generated on `${{ steps.meta.outputs.snapshot_date }}` from commit [`${{ github.sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}).
+
+            > [!TIP]
+            > **Why this snapshot exists:** Arch Linux is a rolling-release distribution. Older pre-built images require extensive package upgrades (`pacman -Syu`) upon first boot. This rolling snapshot is rebuilt periodically directly from upstream ALARM repositories to ensure fresh packages out-of-the-box.
+
+            ### Checksums (SHA-256)
+            ```text
+            $(cat dist/SHA256SUMS)
+            ```
+
+            ### How to Flash
+            1. Download the `.img.xz` file from Assets below.
+            2. Launch **[Raspberry Pi Imager](https://www.raspberrypi.com/software/)**.
+            3. Click **Choose OS** → scroll to the bottom → **Use custom** → select the `.img.xz` file.
+            4. Click **Choose Storage** → pick your SD card → click **Write**.
+            5. Insert the card into your Raspberry Pi 5, connect Ethernet, and power on!
+
+            ### Default Credentials
+            | Account | Username | Password | Privileges |
+            | :--- | :--- | :--- | :--- |
+            | **Standard User** | `alarm` | `alarm` | `wheel` (`sudo` privileges) |
+            | **Root User** | `root` | `root` | Superuser / Administrator |
+          files: dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

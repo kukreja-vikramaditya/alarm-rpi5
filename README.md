@@ -344,14 +344,16 @@ To run diagnostic checks on your host system without building:
 
 ## Continuous Integration & Automated Releases
 
-A GitHub Actions workflow ([`.github/workflows/build.yml`](.github/workflows/build.yml)) automates testing, image building, and distribution:
+GitHub Actions workflows automate testing, image building, and distribution:
 
-1. **Lint & Test**: On every push and pull request, ShellCheck, `shfmt`, and all 10 unit test suites run automatically.
-2. **Build**: On every commit to `main` (or manual `workflow_dispatch`), an Arch Linux container runs the batch build pipeline using QEMU ARM64 binfmt emulation.
-3. **Publish**:
-   - Generates SHA-256 checksums (`SHA256SUMS`).
-   - Attaches the compressed `.img.xz` artifact to the workflow run.
-   - Publishes to GitHub Releases under a rolling `latest` release tag (or dedicated version tag for `v*` pushes).
+1. **Continuous Integration & Releases ([`.github/workflows/build.yml`](.github/workflows/build.yml))**:
+   - **Lint & Test**: On every push and pull request, ShellCheck, `shfmt`, and all 10 unit test suites run automatically.
+   - **Build**: On every commit to `main` (or manual `workflow_dispatch`), an Arch Linux container builds the image via QEMU ARM64 binfmt emulation.
+   - **Publish**: Generates SHA-256 checksums (`SHA256SUMS`) and publishes to GitHub Releases under rolling `latest` or tagged version releases (e.g. `v1.0.1`).
+
+2. **Scheduled Rolling Snapshots ([`.github/workflows/nightly-release.yml`](.github/workflows/nightly-release.yml))**:
+   - **Schedule**: Runs automatically on a bi-weekly cron (1st & 15th of each month) and via manual dispatch.
+   - **Purpose**: Arch Linux is a rolling-release distribution. Older pre-built images require extensive `pacman -Syu` downloads on first boot. This workflow publishes an updated `latest-snapshot` release containing the freshest packages directly from upstream mirrors.
 
 ## License
 

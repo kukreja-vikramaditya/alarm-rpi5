@@ -148,7 +148,7 @@ jobs:
             1. Download the `.img.xz` file from Assets below.
             2. Launch **[Raspberry Pi Imager](https://www.raspberrypi.com/software/)**.
             3. Click **Choose OS** → scroll to the bottom → **Use custom** → select the `.img.xz` file.
-            4. Click **Choose Storage** → pick your SD card or NVMe drive → click **Write**.
+            4. Click **Choose Storage** → pick your SD card → click **Write**.
             5. Insert the card into your Raspberry Pi 5, connect Ethernet, and power on!
 
             ### Default Credentials
