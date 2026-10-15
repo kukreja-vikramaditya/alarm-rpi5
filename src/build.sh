@@ -5,21 +5,24 @@ ensure_loop_partitions() {
     local ldev="$1"
     local devname
     devname="$(basename "$ldev")"
-    if [[ ! -b "${ldev}p1" || ! -b "${ldev}p2" ]]; then
-        partx -u "${ldev}" 2>/dev/null || partprobe "${ldev}" 2>/dev/null || true
-        udevadm settle --timeout=5 2>/dev/null || sleep 1
-        local p
-        for p in 1 2; do
-            if [[ ! -b "${ldev}p${p}" ]]; then
-                local sys_dev="/sys/class/block/${devname}p${p}/dev"
-                if [[ -f "$sys_dev" ]]; then
-                    local maj min
-                    IFS=: read -r maj min <"$sys_dev"
-                    mknod -m 660 "${ldev}p${p}" b "$maj" "$min" 2>/dev/null || true
-                fi
+    partprobe "${ldev}" 2>/dev/null || partx -u "${ldev}" 2>/dev/null || true
+    udevadm settle --timeout=5 2>/dev/null || sleep 1
+    local p
+    for p in 1 2; do
+        if [[ ! -b "${ldev}p${p}" ]]; then
+            local sys_dev=""
+            if [[ -f "/sys/class/block/${devname}p${p}/dev" ]]; then
+                sys_dev="/sys/class/block/${devname}p${p}/dev"
+            elif [[ -f "/sys/block/${devname}/${devname}p${p}/dev" ]]; then
+                sys_dev="/sys/block/${devname}/${devname}p${p}/dev"
             fi
-        done
-    fi
+            if [[ -n "$sys_dev" && -f "$sys_dev" ]]; then
+                local maj min
+                IFS=: read -r maj min <"$sys_dev"
+                mknod -m 660 "${ldev}p${p}" b "$maj" "$min" 2>/dev/null || true
+            fi
+        fi
+    done
 }
 
 # ──────────────────────────────────────────────────────────────────────
@@ -27,6 +30,17 @@ ensure_loop_partitions() {
 # ──────────────────────────────────────────────────────────────────────
 create_image() {
     log_phase "Phase 1/5 — Create disk image (${IMG_SIZE})"
+
+    # Ensure /dev/loop-control and loop device nodes exist in minimal container environments
+    if [[ ! -c /dev/loop-control ]]; then
+        mknod -m 660 /dev/loop-control c 10 237 2>/dev/null || true
+    fi
+    local i
+    for i in $(seq 0 15); do
+        if [[ ! -b "/dev/loop${i}" ]]; then
+            mknod -m 660 "/dev/loop${i}" b 7 "$i" 2>/dev/null || true
+        fi
+    done
 
     mkdir -p -- "${OUTPUT_DIR}"
 
