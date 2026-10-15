@@ -294,6 +294,17 @@ To run diagnostic checks on your host system without building:
 ./build-alarm-rpi5.sh --check
 ```
 
+## Continuous Integration & Automated Releases
+
+A GitHub Actions workflow ([`.github/workflows/build.yml`](.github/workflows/build.yml)) automates testing, image building, and distribution:
+
+1. **Lint & Test**: On every push and pull request, ShellCheck, `shfmt`, and all 9 unit test suites (213 assertions) run automatically.
+2. **Build**: On every commit to `main` or `master` (or manual `workflow_dispatch`), an Arch Linux container runs the batch build pipeline using QEMU ARM64 binfmt emulation.
+3. **Publish**:
+   - Generates SHA-256 checksums (`SHA256SUMS`).
+   - Attaches the compressed `.img.xz` artifact to the workflow run.
+   - Publishes to GitHub Releases under a rolling `latest` release tag (or dedicated version tag for `v*` pushes).
+
 ## License
 
 The build script in this repository is released under the [MIT License](LICENSE). The software it assembles is governed by its respective upstream licenses.

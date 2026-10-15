@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 # src/build.sh — Core 5-phase Arch Linux ARM Raspberry Pi 5 build pipeline
 
+ensure_loop_partitions() {
+    local ldev="$1"
+    if [[ ! -b "${ldev}p1" || ! -b "${ldev}p2" ]]; then
+        partx -u "${ldev}" 2>/dev/null || partprobe "${ldev}" 2>/dev/null || true
+        udevadm settle --timeout=5 2>/dev/null || sleep 1
+    fi
+}
+
 # ──────────────────────────────────────────────────────────────────────
 # Phase 1: Create disk image & partitions
 # ──────────────────────────────────────────────────────────────────────
@@ -37,9 +45,10 @@ create_image() {
     # Attach loopback with partition scanning
     LOOP="$(losetup --find --show --partscan -- "${IMG_FILE}")"
     log_info "Loopback device: ${LOOP}"
+    ensure_loop_partitions "${LOOP}"
 
     # Wait for partition device nodes to appear
-    udevadm settle --timeout=5 2>/dev/null || sleep 2
+    udevadm settle --timeout=5 2>/dev/null || sleep 1
 
     run_spin "Formatting boot partition (FAT32)" mkfs.vfat -F32 -n BOOT "${LOOP}p1"
     run_spin "Formatting root partition (ext4)" mkfs.ext4 -L ROOT -F -q "${LOOP}p2"
@@ -192,6 +201,7 @@ finalize_image() {
 
     # ── Shrink ext4 filesystem to minimum ────────────────────────────
     LOOP="$(losetup --find --show --partscan -- "${IMG_FILE}")"
+    ensure_loop_partitions "${LOOP}"
     # shellcheck disable=SC2016 # Expression is intentional parameter for bash -c subshell
     run_spin "Checking filesystem integrity" bash -c 'e2fsck -f -y "$1" >/dev/null 2>&1 || true' _ "${LOOP}p2"
     # shellcheck disable=SC2016 # Expression is intentional parameter for bash -c subshell
@@ -217,6 +227,7 @@ finalize_image() {
 
     # Re-attach with partition scan to verify integrity and expand filesystem to boundary
     LOOP="$(losetup --find --show --partscan -- "${IMG_FILE}")"
+    ensure_loop_partitions "${LOOP}"
     udevadm settle --timeout=5 2>/dev/null || sleep 1
     e2fsck -f -y "${LOOP}p2" >/dev/null 2>&1 || true
     resize2fs "${LOOP}p2" >/dev/null 2>&1 || true

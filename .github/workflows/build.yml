@@ -1,0 +1,141 @@
+name: Build & Publish ALARM Raspberry Pi 5 Image
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Lint & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install ShellCheck & shfmt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck shfmt
+
+      - name: Run test suites (9 suites)
+        run: ./tests/run_all.sh
+
+  build:
+    name: Build & Publish Image
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Free runner disk space
+        run: |
+          echo "Freeing disk space on runner..."
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost
+          df -h /
+
+      - name: Set up QEMU binfmt emulation
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Build ALARM image inside Arch Linux container
+        run: |
+          docker run --rm --privileged \
+            -v /dev:/dev \
+            -v /sys:/sys \
+            -v /proc/sys/fs/binfmt_misc:/proc/sys/fs/binfmt_misc \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -w /workspace \
+            archlinux:base-devel \
+            bash -c '
+              set -euo pipefail
+              echo "==> Initializing pacman keys and installing build dependencies..."
+              pacman-key --init
+              pacman-key --populate archlinux
+              pacman -Syu --noconfirm --needed \
+                arch-install-scripts \
+                dosfstools \
+                e2fsprogs \
+                parted \
+                xz \
+                util-linux \
+                coreutils \
+                qemu-user-static \
+                qemu-user-static-binfmt
+
+              echo "==> Verifying host environment diagnostics..."
+              ./build-alarm-rpi5.sh --check
+
+              echo "==> Building Arch Linux ARM Raspberry Pi 5 Image (batch mode)..."
+              ./build-alarm-rpi5.sh -y
+            '
+
+      - name: Generate SHA-256 Checksums
+        id: checksums
+        run: |
+          cd dist
+          sha256sum *.img.xz > SHA256SUMS
+          cat SHA256SUMS
+          IMAGE_FILE="$(ls *.img.xz | head -n 1)"
+          echo "image_file=${IMAGE_FILE}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Artifact to Workflow Run
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.checksums.outputs.image_file }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Determine Release Metadata
+        id: meta
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "tag_name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+            echo "release_name=Release ${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag_name=latest" >> "$GITHUB_OUTPUT"
+            echo "release_name=Latest Continuous Build (${{ github.sha }})" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag_name }}
+          name: ${{ steps.meta.outputs.release_name }}
+          prerelease: false
+          make_latest: true
+          body: |
+            ## Arch Linux ARM for Raspberry Pi 5
+
+            Automated image build generated from commit [`${{ github.sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}).
+
+            ### Checksums (SHA-256)
+            ```text
+            $(cat dist/SHA256SUMS)
+            ```
+
+            ### How to Flash
+            1. Download the `.img.xz` file from Assets below.
+            2. Launch **[Raspberry Pi Imager](https://www.raspberrypi.com/software/)**.
+            3. Click **Choose OS** → scroll to the bottom → **Use custom** → select the `.img.xz` file.
+            4. Click **Choose Storage** → pick your SD card or NVMe drive → click **Write**.
+            5. Insert the card into your Raspberry Pi 5, connect Ethernet, and power on!
+          files: dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
