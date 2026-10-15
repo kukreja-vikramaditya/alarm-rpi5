@@ -200,7 +200,6 @@ configure_system() {
 	# Enable native systemd networking (zero external dependencies)
 	systemctl enable systemd-networkd.service
 	systemctl enable systemd-resolved.service
-	ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
 
 	# Enable SSH
 	systemctl enable sshd.service
@@ -218,6 +217,10 @@ configure_system() {
 	# Clean pacman cache to reduce image size
 	pacman -Scc --noconfirm
 CHROOT
+
+    # Configure resolv.conf symlink for systemd-resolved (done outside chroot as arch-chroot bind-mounts host resolv.conf)
+    rm -f -- "${ROOTFS}/etc/resolv.conf"
+    ln -sf -- /run/systemd/resolve/stub-resolv.conf "${ROOTFS}/etc/resolv.conf"
 
     log_info "System configuration complete"
 }
