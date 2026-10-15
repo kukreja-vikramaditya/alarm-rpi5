@@ -19,7 +19,7 @@ Options:
       --batch
   -o, --output-dir DIR     Output directory       (default: ${script_dir}/dist)
   -v, --version VER        Image version string   (default: 0.1.0)
-  -s, --img-size SIZE      Raw image size         (default: 4G)
+  -s, --img-size SIZE      Raw image size         (default: 3G)
       --hostname NAME      Target hostname        (default: raspberrypi)
   -u, --user USER          Non-root username      (default: alarm)
   -p, --password PASS      Non-root user password (default: alarm)

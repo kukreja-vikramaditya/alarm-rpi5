@@ -89,6 +89,7 @@ alarm-rpi5/
 ├── build-alarm-rpi5.sh      # Primary root entry point
 ├── build.sh                 # Convenience alias symlink
 ├── data/                    # Configuration templates and static files deployed to rootfs
+│   ├── 20-wired.network     # Wired Ethernet DHCP configuration (systemd-networkd)
 │   ├── cmdline.txt          # Kernel boot cmdline parameters
 │   ├── config.txt           # Pi 5 bootloader configuration
 │   ├── fstab                # Partition mount definitions
@@ -135,8 +136,12 @@ Options:
       --batch
   -o, --output-dir DIR     Output directory       (default: ./dist)
   -v, --version VER        Image version string   (default: 0.1.0)
-  -s, --img-size SIZE      Raw image size         (default: 4G)
+  -s, --img-size SIZE      Raw image size         (default: 3G)
       --hostname NAME      Target hostname        (default: raspberrypi)
+  -u, --user USER          Non-root username      (default: alarm)
+  -p, --password PASS      Non-root user password (default: alarm)
+      --root-user USER     Root username          (default: root)
+      --root-password PASS Root password          (default: root)
       --no-compress        Skip xz compression
       --no-gum             Disable Gum styling and interactive elements
   -h, --help               Show help
@@ -185,7 +190,7 @@ nano alarm.conf
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `IMG_SIZE` | `4G` | Raw image size before shrinking (fits on any SD card >=4GB) |
+| `IMG_SIZE` | `3G` | Raw image size (fits on any SD card >=4GB; sparse zeros compress to ~340MB) |
 | `VERSION` | `0.1.0` | Embedded in output filename |
 | `IMG_NAME` | `alarm-rpi5-{ver}-{date}` | Full override for output filename |
 | `BOOT_SIZE_MIB` | `256` | Boot partition size in MiB |
@@ -211,7 +216,7 @@ nano alarm.conf
 4. **Choose Storage** → select your SD card
 5. **Write**
 
-> **Note:** The OS Customization dialog (Wi-Fi, SSH, hostname) is disabled for custom images. SSH and NetworkManager are pre-enabled in the image; connect via Ethernet on first boot.
+> **Note:** The OS Customization dialog (Wi-Fi, SSH, hostname) is disabled for custom images. SSH and `systemd-networkd` wired DHCP are pre-enabled in the image; connect via Ethernet on first boot.
 
 ### dd
 
@@ -252,13 +257,12 @@ The image ships with a minimal set of packages:
 
 | Package | Why |
 |---------|-----|
-| `base` | Core Arch system |
+| `base` | Core Arch system (includes `systemd-networkd` & `systemd-resolved`) |
 | `linux-rpi` | RPi Foundation kernel with BCM2712 (Pi 5) support |
 | `firmware-raspberrypi` | Broadcom wireless/Bluetooth firmware |
 | `raspberrypi-bootloader` | Boot firmware (`start4.elf`, `fixup4.dat`, etc.) |
 | `archlinuxarm-keyring` | Package signing keys |
 | `openssh` | Remote access (enabled by default) |
-| `networkmanager` + `iwd` | Wired and wireless networking |
 | `sudo` | Privilege escalation |
 | `nano` | Text editor |
 
@@ -273,10 +277,9 @@ x86_64 Host
     ├─ qemu-user-static + binfmt_misc → transparent aarch64 emulation
     ├─ Phase 2: pacstrap → install ALARM packages into isolated /tmp/alarm-rootfs.*
     ├─ Phase 3: configure bootloader (config.txt, cmdline.txt, fstab)
-    ├─ Phase 4: arch-chroot → configure locale, users, services, keyring
-    ├─ Phase 5: resize2fs -M + truncate → shrink ext4 filesystem and disk image to minimum
-    ├─ xz -9 → compress for distribution
-    └─ Finalize image, print output path, and clean up temporary installation files/mounts
+    ├─ Phase 4: arch-chroot → configure locale, users, services, keyring, network
+    ├─ Phase 5: sparse zero-fill & finalize image (xz -9 compress for distribution)
+    └─ Print output path, and clean up temporary installation files/mounts
 ```
 
 No U-Boot (Pi 5 can't use it). The boot chain is:
@@ -324,7 +327,7 @@ make ARCH=arm64 -j$(nproc) Image modules dtbs
 
 ## Testing
 
-Run all unit and integration test suites (9 suites, 215 automated checks across every module):
+Run all unit and integration test suites (10 suites, 277 automated checks across every module):
 
 ```bash
 ./tests/run_all.sh
