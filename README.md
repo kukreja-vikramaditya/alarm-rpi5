@@ -96,6 +96,7 @@ alarm-rpi5/
 │   ├── config.txt           # Pi 5 bootloader configuration
 │   ├── fstab                # Partition mount definitions
 │   ├── hosts                # Local hostname mapping template
+│   ├── install-ui.sh        # Pre-installed automated desktop environment installer
 │   ├── locale.conf          # System locale configuration template
 │   ├── locale.gen           # Locale generation definitions
 │   ├── pacman-bootstrap.conf# Temporary pacman config for pacstrap on host
@@ -255,11 +256,36 @@ The Pi 5 supports NVMe boot natively. Flash to your NVMe drive instead of SD, an
 
 ## Installing a Desktop Environment (UI)
 
-The base image boots into a minimal command-line interface. To install a graphical desktop environment with hardware acceleration on your Raspberry Pi 5, follow the steps below.
+The base image boots into a clean command-line interface. An automated installer script `install-ui` is **pre-installed in `/usr/local/bin`** so you don't have to manually type out multiple long package lists.
 
-### Key Concepts: How Linux GUI Fits Together
+### Quick Start: Automated 1-Command Installer
 
-If you are new to Arch Linux or Linux desktop stacks, here is how the pieces work together:
+SSH into your Pi (or use the local console) and run:
+
+```bash
+sudo install-ui
+```
+
+This presents a simple menu:
+```text
+Choose a Desktop Environment to install:
+  1) XFCE        - Lightweight, fast, minimal RAM (~300MB idle) [Recommended]
+  2) KDE Plasma  - Modern, hardware-accelerated Wayland desktop
+  3) GNOME       - Polished, touch-friendly Wayland desktop
+```
+
+Or pass the target desktop directly for a completely non-interactive installation:
+```bash
+sudo install-ui xfce      # Installs XFCE + LightDM + GPU drivers & reboots into GUI
+sudo install-ui kde       # Installs KDE Plasma + SDDM on Wayland
+sudo install-ui gnome     # Installs GNOME + GDM on Wayland
+```
+
+---
+
+### Manual Installation & Architecture Breakdown
+
+If you prefer installing components manually, or want to understand the role of each package:
 
 | Layer | Component | What It Does | Example |
 | :--- | :--- | :--- | :--- |

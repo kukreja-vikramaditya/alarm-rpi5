@@ -187,6 +187,11 @@ configure_system() {
     cp -- "${DATA_DIR}/alarm-expand-root.service" "${ROOTFS}/etc/systemd/system/alarm-expand-root.service"
     chmod 644 "${ROOTFS}/etc/systemd/system/alarm-expand-root.service"
 
+    # Deploy automated desktop environment (UI) installer script
+    cp -- "${DATA_DIR}/install-ui.sh" "${ROOTFS}/usr/local/bin/install-ui"
+    chmod 755 "${ROOTFS}/usr/local/bin/install-ui"
+    ln -sf -- install-ui "${ROOTFS}/usr/local/bin/install-ui.sh"
+
     # Ensure system config files have standard read permissions
     chmod 644 "${ROOTFS}/etc/hostname" "${ROOTFS}/etc/hosts" "${ROOTFS}/etc/locale.conf" "${ROOTFS}/etc/locale.gen" "${ROOTFS}/etc/pacman.conf" "${ROOTFS}/etc/fstab" "${ROOTFS}/etc/systemd/network/20-wired.network"
 
