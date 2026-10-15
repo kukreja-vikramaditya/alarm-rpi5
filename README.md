@@ -47,15 +47,16 @@ Output lands in `dist/`. That's it.
 sudo ./build-alarm-rpi5.sh [OPTIONS]
 
 Options:
-  -c, --check            Check host environment and dependencies without building
-  -i, --interactive      Run interactive configuration wizard (powered by gum)
-  -o, --output-dir DIR   Output directory       (default: ./dist)
-  -v, --version VER      Image version string   (default: 0.1.0)
-  -s, --img-size SIZE    Raw image size         (default: 4G)
-      --hostname NAME    Target hostname        (default: alarm-rpi5)
-      --no-compress      Skip xz compression
-      --no-gum           Disable Gum styling and interactive elements
-  -h, --help             Show help
+  -c, --check              Check host environment and dependencies without building
+  -i, --interactive        Run interactive configuration wizard (default on TTY)
+  -y, --non-interactive    Bypass interactive prompts and use defaults/flags
+  -o, --output-dir DIR     Output directory       (default: ./dist)
+  -v, --version VER        Image version string   (default: 0.1.0)
+  -s, --img-size SIZE      Raw image size         (default: 4G)
+      --hostname NAME      Target hostname        (default: alarm-rpi5)
+      --no-compress        Skip xz compression
+      --no-gum             Disable Gum styling and interactive elements
+  -h, --help               Show help
 ```
 
 ### Examples
@@ -64,11 +65,11 @@ Options:
 # Check if host environment has required tools & setup
 ./build-alarm-rpi5.sh --check
 
-# Interactive setup wizard with gum (inputs, selectors, password prompts)
-sudo ./build-alarm-rpi5.sh -i
-
-# Default build
+# Default build (launches interactive wizard automatically on terminal)
 sudo ./build-alarm-rpi5.sh
+
+# Non-interactive / unattended build (uses defaults or flags immediately)
+sudo ./build-alarm-rpi5.sh -y
 
 # Custom version and output
 sudo ./build-alarm-rpi5.sh -v 1.0.0 -o /mnt/images

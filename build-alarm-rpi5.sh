@@ -141,17 +141,19 @@ usage() {
 Usage: sudo ./${SCRIPT_NAME} [OPTIONS]
 
 Build an Arch Linux ARM image for Raspberry Pi 5.
+Runs in interactive wizard mode by default when attached to a terminal.
 
 Options:
-  -c, --check            Check host environment and dependencies without building
-  -i, --interactive      Run interactive configuration wizard (powered by gum)
-  -o, --output-dir DIR   Output directory       (default: ${SCRIPT_DIR}/dist)
-  -v, --version VER      Image version string   (default: 0.1.0)
-  -s, --img-size SIZE    Raw image size         (default: 4G)
-      --hostname NAME    Target hostname        (default: alarm-rpi5)
-      --no-compress      Skip xz compression
-      --no-gum           Disable Gum styling and interactive elements
-  -h, --help             Show this help
+  -c, --check              Check host environment and dependencies without building
+  -i, --interactive        Run interactive configuration wizard explicitly
+  -y, --non-interactive    Bypass interactive prompts and use defaults/flags
+  -o, --output-dir DIR     Output directory       (default: ${SCRIPT_DIR}/dist)
+  -v, --version VER        Image version string   (default: 0.1.0)
+  -s, --img-size SIZE      Raw image size         (default: 4G)
+      --hostname NAME      Target hostname        (default: alarm-rpi5)
+      --no-compress        Skip xz compression
+      --no-gum             Disable Gum styling and interactive elements
+  -h, --help               Show this help
 
 Environment overrides (lower precedence than flags):
   IMG_SIZE, VERSION, IMG_NAME, BOOT_SIZE_MIB, TARGET_HOSTNAME,
@@ -160,8 +162,8 @@ Environment overrides (lower precedence than flags):
 
 Examples:
   ./${SCRIPT_NAME} --check
-  ./${SCRIPT_NAME} -i
-  sudo ./${SCRIPT_NAME}
+  sudo ./${SCRIPT_NAME}                  # interactive wizard by default
+  sudo ./${SCRIPT_NAME} -y               # build immediately with defaults
   sudo ./${SCRIPT_NAME} -o /mnt/build -v 1.0.0
   EXTRA_PACKAGES="git htop" sudo ./${SCRIPT_NAME}
 USAGE
@@ -172,6 +174,7 @@ USAGE
 # ──────────────────────────────────────────────────────────────────────
 _arg_check=""
 _arg_interactive=""
+_arg_non_interactive=""
 _arg_output_dir=""
 _arg_version=""
 _arg_img_size=""
@@ -184,6 +187,8 @@ while [[ $# -gt 0 ]]; do
             _arg_check=1; shift ;;
         -i|--interactive)
             _arg_interactive=1; shift ;;
+        -y|--non-interactive|--batch)
+            _arg_non_interactive=1; shift ;;
         --no-gum)
             USE_GUM=0; shift ;;
         -o|--output-dir)
@@ -333,13 +338,9 @@ format_badge() {
 }
 
 # ──────────────────────────────────────────────────────────────────────
-# Interactive Wizard (gum)
+# Interactive Wizard (Gum engine + pure Bash fallback)
 # ──────────────────────────────────────────────────────────────────────
-interactive_wizard() {
-    if [[ "${USE_GUM:-0}" -ne 1 ]]; then
-        die "Interactive mode requires 'gum' and a terminal. Install with: sudo pacman -S gum"
-    fi
-
+interactive_wizard_gum() {
     gum_banner
     "$GUM_BIN" style --bold --underline "Interactive Configuration Wizard"
     echo ""
@@ -383,6 +384,75 @@ interactive_wizard() {
     if ! "$GUM_BIN" confirm "Start building with these settings?"; then
         echo "Build cancelled by user."
         exit 0
+    fi
+}
+
+interactive_wizard_bash() {
+    printf "\n=== Interactive Configuration Wizard ===\n\n"
+
+    local in_ver in_host in_user in_root_pw in_user_pw in_size in_comp in_confirm
+
+    read -r -p "Image version [${VERSION}]: " in_ver
+    [[ -n "$in_ver" ]] && VERSION="$in_ver"
+
+    read -r -p "Target hostname [${TARGET_HOSTNAME}]: " in_host
+    [[ -n "$in_host" ]] && TARGET_HOSTNAME="$in_host"
+
+    read -r -p "Non-root username [${ALARM_USER}]: " in_user
+    [[ -n "$in_user" ]] && ALARM_USER="$in_user"
+
+    read -r -s -p "Root password (press Enter for default): " in_root_pw
+    echo ""
+    [[ -n "$in_root_pw" ]] && ROOT_PASSWORD="$in_root_pw"
+
+    read -r -s -p "${ALARM_USER} password (press Enter for default): " in_user_pw
+    echo ""
+    [[ -n "$in_user_pw" ]] && ALARM_PASSWORD="$in_user_pw"
+
+    read -r -p "Raw image size (4G, 8G, 16G, 32G) [${IMG_SIZE}]: " in_size
+    [[ -n "$in_size" ]] && IMG_SIZE="$in_size"
+
+    read -r -p "Enable XZ compression? (y/n) [y]: " in_comp
+    if [[ "$in_comp" =~ ^[Nn] ]]; then
+        COMPRESS=0
+    else
+        COMPRESS=1
+    fi
+
+    IMG_NAME="alarm-rpi5-${VERSION}-${BUILD_DATE}"
+    IMG_FILE="${OUTPUT_DIR}/${IMG_NAME}.img"
+
+    cat <<SUMMARY
+
+Build Summary:
+  Version:     ${VERSION}
+  Hostname:    ${TARGET_HOSTNAME}
+  User:        ${ALARM_USER}
+  Image Size:  ${IMG_SIZE}
+  Compressed:  $(( COMPRESS ? 1 : 0 )) (xz)
+  Output Path: ${OUTPUT_DIR}/
+
+SUMMARY
+
+    read -r -p "Start building with these settings? (y/n) [y]: " in_confirm
+    if [[ "$in_confirm" =~ ^[Nn] ]]; then
+        echo "Build cancelled by user."
+        exit 0
+    fi
+}
+
+interactive_wizard() {
+    if [[ ! -t 0 || ! -t 1 ]]; then
+        if [[ -n "${_arg_interactive:-}" ]]; then
+            die "Interactive mode requires an interactive terminal (stdin and stdout must be a tty)."
+        fi
+        return 0
+    fi
+
+    if [[ "${USE_GUM:-0}" -eq 1 ]]; then
+        interactive_wizard_gum
+    else
+        interactive_wizard_bash
     fi
 }
 
@@ -810,7 +880,7 @@ main() {
         return $?
     fi
 
-    if [[ -n "${_arg_interactive}" ]]; then
+    if [[ -z "${_arg_non_interactive}" ]]; then
         interactive_wizard
     fi
 

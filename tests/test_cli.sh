@@ -53,6 +53,7 @@ output="$("$BIN" --help 2>&1 || true)"
 assert_contains "$output" "Usage: sudo ./build-alarm-rpi5.sh" "Flag --help displays usage"
 assert_contains "$output" "--check" "Flag --help lists --check"
 assert_contains "$output" "--interactive" "Flag --help lists --interactive"
+assert_contains "$output" "--non-interactive" "Flag --help lists --non-interactive"
 assert_contains "$output" "--no-gum" "Flag --help lists --no-gum"
 
 # Test 3: -h flag behaves identically
@@ -107,9 +108,17 @@ output="$("$BIN" --interactive 2>&1)"
 code=$?
 set -e
 assert_eq "1" "$code" "--interactive without tty exits with code 1"
-assert_contains "$output" "requires 'gum' and a terminal" "--interactive non-tty message"
+assert_contains "$output" "requires an interactive terminal" "--interactive non-tty message"
 
-# Test 10: Repository structure checks
+# Test 10: -y / --non-interactive flag bypasses wizard and proceeds to preflight
+set +e
+output="$("$BIN" -y 2>&1)"
+code=$?
+set -e
+assert_eq "1" "$code" "-y without root exits at preflight"
+assert_contains "$output" "This script must be run as root" "-y preflight message"
+
+# Test 11: Repository structure checks
 [[ -f "${SCRIPT_DIR}/README.md" ]] && assert_eq "0" "0" "README.md exists" || assert_eq "0" "1" "README.md exists"
 [[ -f "${SCRIPT_DIR}/LICENSE" ]] && assert_eq "0" "0" "LICENSE exists" || assert_eq "0" "1" "LICENSE exists"
 [[ -x "$BIN" ]] && assert_eq "0" "0" "build script is executable" || assert_eq "0" "1" "build script is executable"
