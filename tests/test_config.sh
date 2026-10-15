@@ -95,4 +95,41 @@ VERSION="2.0.0"
 recompute_image_paths
 assert_contains "$IMG_FILE" "alarm-rpi5-2.0.0-" "recompute_image_paths reflects new VERSION"
 
+# Test 5: Username normalization and validation
+_arg_user="CustomPi"
+init_config
+assert_eq "custompi" "$ALARM_USER" "init_config normalizes non-root username to lowercase"
+
+# validate_config accepts valid custom usernames
+ALARM_USER="pi"
+assert_eq "0" "$(validate_config && echo 0 || echo 1)" "validate_config accepts 'pi'"
+
+ALARM_USER="developer"
+assert_eq "0" "$(validate_config && echo 0 || echo 1)" "validate_config accepts 'developer'"
+
+ALARM_USER="my_user-1"
+assert_eq "0" "$(validate_config && echo 0 || echo 1)" "validate_config accepts 'my_user-1'"
+
+# validate_config rejects 'root' as non-root username
+set +e
+err_root="$( (
+    ALARM_USER="root"
+    validate_config
+) 2>&1)"
+code_root=$?
+set -e
+assert_eq "1" "$code_root" "validate_config rejects 'root' as non-root user"
+assert_contains "$err_root" "cannot be 'root'" "validate_config error mentions root cannot be non-root user"
+
+# validate_config rejects invalid username formats
+set +e
+err_invalid="$( (
+    ALARM_USER="user@invalid"
+    validate_config
+) 2>&1)"
+code_invalid=$?
+set -e
+assert_eq "1" "$code_invalid" "validate_config rejects invalid username format"
+assert_contains "$err_invalid" "Invalid non-root username" "validate_config error mentions invalid username"
+
 test_summary "src/config.sh"

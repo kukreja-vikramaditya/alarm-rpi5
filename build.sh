@@ -83,7 +83,10 @@ main() {
         interactive_wizard
     fi
 
-    # 9. Check if previous run left output artifacts
+    # 9. Validate configuration values (hostname, usernames, etc.)
+    validate_config
+
+    # 10. Check if previous run left output artifacts
     local existing_target=""
     if [[ -f "${IMG_FILE}.xz" ]]; then
         existing_target="${IMG_FILE}.xz"

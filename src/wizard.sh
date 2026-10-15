@@ -27,6 +27,13 @@ interactive_wizard_gum() {
     # 2. Non-Root Credentials
     ALARM_USER="$("$GUM_BIN" input --header "👤 Non-Root Username" --value "${ALARM_USER}")"
     ALARM_USER="${ALARM_USER:-alarm}"
+    ALARM_USER="$(echo "${ALARM_USER}" | tr '[:upper:]' '[:lower:]')"
+    while [[ ! "${ALARM_USER}" =~ ^[a-z_][a-z0-9_-]*$ || "${ALARM_USER}" == "root" ]]; do
+        "$GUM_BIN" log -l error "Invalid username '${ALARM_USER}'. Must start with a letter/underscore and contain only lowercase letters, digits, underscores, or hyphens (cannot be 'root')."
+        ALARM_USER="$("$GUM_BIN" input --header "👤 Non-Root Username" --value "alarm")"
+        ALARM_USER="${ALARM_USER:-alarm}"
+        ALARM_USER="$(echo "${ALARM_USER}" | tr '[:upper:]' '[:lower:]')"
+    done
     "$GUM_BIN" style --foreground 212 "  ✓ Non-Root Username: ${ALARM_USER}"
 
     local new_user
@@ -102,6 +109,7 @@ interactive_wizard_bash() {
     # 2. Non-Root Credentials
     read -r -p "👤 Non-root username [${ALARM_USER}]: " in_user
     [[ -n "$in_user" ]] && ALARM_USER="$in_user"
+    ALARM_USER="$(echo "${ALARM_USER}" | tr '[:upper:]' '[:lower:]')"
 
     read -r -s -p "🔒 ${ALARM_USER} password (press Enter for default): " in_user_pw
     echo ""

@@ -46,6 +46,7 @@ init_config() {
     ROOT_USER="${_arg_root_user:-${ROOT_USER:-root}}"
     ROOT_PASSWORD="${_arg_root_password:-${ROOT_PASSWORD:-root}}"
     ALARM_USER="${_arg_user:-${NON_ROOT_USER:-${USER_NAME:-${ALARM_USER:-alarm}}}}"
+    ALARM_USER="$(echo "${ALARM_USER}" | tr '[:upper:]' '[:lower:]')"
     ALARM_PASSWORD="${_arg_password:-${NON_ROOT_PASSWORD:-${USER_PASSWORD:-${ALARM_PASSWORD:-alarm}}}}"
 
     local _output_dir="${_arg_output_dir:-${SCRIPT_DIR:-.}/dist}"
@@ -59,6 +60,23 @@ init_config() {
     fi
 
     recompute_image_paths
+}
+
+validate_config() {
+    # Normalize non-root username to lowercase (standard Linux convention)
+    ALARM_USER="$(echo "${ALARM_USER:-alarm}" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ -z "${ALARM_USER}" ]]; then
+        die "Non-root username cannot be empty."
+    fi
+
+    if [[ "${ALARM_USER}" == "root" ]]; then
+        die "Non-root username cannot be 'root'. Root credentials must be configured via ROOT_USER and ROOT_PASSWORD."
+    fi
+
+    if [[ ! "${ALARM_USER}" =~ ^[a-z_][a-z0-9_-]*$ ]]; then
+        die "Invalid non-root username '${ALARM_USER}'. Usernames must start with a letter or underscore, and contain only lowercase letters, digits, underscores, or hyphens."
+    fi
 }
 
 recompute_image_paths() {

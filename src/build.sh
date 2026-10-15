@@ -231,9 +231,27 @@ configure_system() {
 	# Root password
 	printf '%s\n' "${ROOT_USER:-root}:${ROOT_PASSWORD}" | chpasswd
 
-	# Ensure /home has standard 755 permissions and create non-root user
+	# Remove default alarm user if user configured a different custom username
+	if [[ "${ALARM_USER}" != "alarm" ]] && id alarm &>/dev/null; then
+		userdel -r alarm 2>/dev/null || true
+	fi
+
+	# Determine available supplementary groups for hardware and sudo access
+	user_groups=()
+	for grp in wheel audio video input storage power network users; do
+		if getent group "\$grp" &>/dev/null; then
+			user_groups+=("\$grp")
+		fi
+	done
+	groups_csv="\$(IFS=,; echo "\${user_groups[*]}")"
+
+	# Ensure /home has standard 755 permissions and create/configure non-root user
 	chmod 755 /home
-	useradd -m -G wheel -s /bin/bash "${ALARM_USER}"
+	if id "${ALARM_USER}" &>/dev/null; then
+		usermod -aG "\${groups_csv}" -s /bin/bash "${ALARM_USER}"
+	else
+		useradd -m -U -G "\${groups_csv}" -s /bin/bash "${ALARM_USER}"
+	fi
 	printf '%s\n' "${ALARM_USER}:${ALARM_PASSWORD}" | chpasswd
 	chown -R "${ALARM_USER}:${ALARM_USER}" "/home/${ALARM_USER}"
 	chmod 700 "/home/${ALARM_USER}"
@@ -323,7 +341,7 @@ finalize_image() {
             "  1. Choose OS → Use custom → select ${final_file}" \
             "  2. Choose storage → Write" \
             "" \
-            "Default credentials:" \
+            "Configured credentials:" \
             "  root  / ${ROOT_PASSWORD}" \
             "  ${ALARM_USER} / ${ALARM_PASSWORD}" \
             "" \
@@ -344,7 +362,7 @@ finalize_image() {
 	    1. Choose OS → Use custom → select the image
 	    2. Choose storage → Write
 	
-	  Default credentials:
+	  Configured credentials:
 	    root  / ${ROOT_PASSWORD}
 	    ${ALARM_USER} / ${ALARM_PASSWORD}
 	
