@@ -28,7 +28,7 @@ interactive_wizard_gum() {
     new_user="$("$GUM_BIN" input --password --header "🔒 ${ALARM_USER} Password (leave empty for default: ${ALARM_PASSWORD})")"
     [[ -n "$new_user" ]] && ALARM_PASSWORD="$new_user"
 
-    IMG_SIZE="$("$GUM_BIN" choose --header "💾 Workspace disk size (4G fits on any SD card >=4GB):" "4G" "8G" "16G" "32G")"
+    IMG_SIZE="$("$GUM_BIN" choose --header "💾 Raw disk size (3G fits on any SD card >=4GB):" "3G" "4G" "8G" "16G" "32G")"
 
     local comp_sel
     comp_sel="$("$GUM_BIN" choose --header "🗜️  XZ Compression:" "📦 Enabled (.img.xz - smaller, recommended)" "⚡ Disabled (.img - raw)")"
@@ -85,7 +85,7 @@ interactive_wizard_bash() {
     echo ""
     [[ -n "$in_user_pw" ]] && ALARM_PASSWORD="$in_user_pw"
 
-    read -r -p "💾 Workspace disk size (4G fits on any SD card >=4GB) [${IMG_SIZE}]: " in_size
+    read -r -p "💾 Raw disk size (3G fits on any SD card >=4GB) [${IMG_SIZE}]: " in_size
     [[ -n "$in_size" ]] && IMG_SIZE="$in_size"
 
     read -r -p "🗜️  Enable XZ compression? (y/n) [y]: " in_comp
