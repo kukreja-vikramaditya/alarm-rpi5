@@ -280,6 +280,10 @@ finalize_image() {
     # shellcheck disable=SC2034 # Global variable read by build-alarm-rpi5.sh entrypoint
     FINAL_BUILT_FILE="${final_file}"
 
+    # Ensure output files are accessible to host users
+    chmod -R a+rX "${OUTPUT_DIR}" 2>/dev/null || true
+    chmod 644 "${final_file}" 2>/dev/null || true
+
     # ── Verify temporary cleanup ─────────────────────────────────────
     clean_stale_temp_files
     log_info "All temporary build files and mounts in /tmp cleaned up"

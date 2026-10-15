@@ -99,6 +99,8 @@ jobs:
       - name: Generate SHA-256 Checksums
         id: checksums
         run: |
+          sudo chown -R "$(id -u):$(id -g)" dist
+          sudo chmod -R 755 dist
           cd dist
           sha256sum *.img.xz > SHA256SUMS
           cat SHA256SUMS
