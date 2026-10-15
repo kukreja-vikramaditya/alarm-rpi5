@@ -138,6 +138,7 @@ All config has sensible defaults. Flags take precedence over environment variabl
 | `IMG_NAME` | `alarm-rpi5-{ver}-{date}` | Full override for output filename |
 | `BOOT_SIZE_MIB` | `256` | Boot partition size in MiB |
 | `TARGET_HOSTNAME` | `raspberrypi` | System hostname |
+| `ROOT_USER` | `root` | Root username |
 | `ROOT_PASSWORD` | `root` | Root password |
 | `ALARM_USER` | `alarm` | Non-root user (wheel group) |
 | `ALARM_PASSWORD` | `alarm` | Non-root user password |
@@ -176,7 +177,7 @@ The Pi 5 supports NVMe boot natively. Flash to your NVMe drive instead of SD, an
 2. Find the Pi's IP from your router or use `nmap -sn 192.168.1.0/24`
 3. SSH in:
    ```bash
-   ssh alarm@<ip>       # password: alarm
+   ssh alarm@<ip>           # password: alarm
    # or
    ssh root@<ip>            # password: root
    # or using hostname:
@@ -268,7 +269,7 @@ make ARCH=arm64 -j$(nproc) Image modules dtbs
 
 ## Testing
 
-Run all unit and integration test suites (9 suites, 213 automated checks across every module):
+Run all unit and integration test suites (9 suites, 215 automated checks across every module):
 
 ```bash
 ./tests/run_all.sh

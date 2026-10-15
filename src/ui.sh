@@ -79,8 +79,8 @@ gum_banner() {
             --border-foreground 212 \
             --padding "1 2" \
             --bold \
-            "Arch Linux ARM for Raspberry Pi 5" \
-            "Clean, Repeatable Image Builder"
+            "🍓 Arch Linux ARM for Raspberry Pi 5" \
+            "🛠️  Clean, Repeatable Image Builder"
         echo ""
     fi
 }

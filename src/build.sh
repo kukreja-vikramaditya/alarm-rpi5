@@ -158,7 +158,7 @@ configure_system() {
 	systemctl enable NetworkManager.service
 
 	# Root password
-	printf '%s\n' "root:${ROOT_PASSWORD}" | chpasswd
+	printf '%s\n' "${ROOT_USER:-root}:${ROOT_PASSWORD}" | chpasswd
 
 	# Create user
 	useradd -m -G wheel -s /bin/bash "${ALARM_USER}"

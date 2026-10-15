@@ -44,6 +44,7 @@ init_config
 
 assert_eq "0.1.0" "$VERSION" "init_config default VERSION is 0.1.0"
 assert_eq "raspberrypi" "$TARGET_HOSTNAME" "init_config default TARGET_HOSTNAME is raspberrypi"
+assert_eq "root" "$ROOT_USER" "init_config default ROOT_USER is root"
 assert_eq "root" "$ROOT_PASSWORD" "init_config default ROOT_PASSWORD is root"
 assert_eq "alarm" "$ALARM_USER" "init_config default ALARM_USER is alarm"
 assert_eq "alarm" "$ALARM_PASSWORD" "init_config default ALARM_PASSWORD is alarm"

@@ -47,8 +47,9 @@ _arg_interactive=""
 USE_GUM=0
 VERSION="0.1.0"
 TARGET_HOSTNAME="raspberrypi"
-ALARM_USER="alarm"
+ROOT_USER="root"
 ROOT_PASSWORD="root"
+ALARM_USER="alarm"
 ALARM_PASSWORD="alarm"
 IMG_SIZE="4G"
 COMPRESS=1
@@ -56,8 +57,9 @@ COMPRESS=1
 interactive_wizard_bash <<EOF >/dev/null
 0.9.0
 rpi5-test
-tester
+rootadmin
 root123
+tester
 user123
 8G
 y
@@ -66,8 +68,9 @@ EOF
 
 assert_eq "0.9.0" "$VERSION" "wizard updates VERSION"
 assert_eq "rpi5-test" "$TARGET_HOSTNAME" "wizard updates TARGET_HOSTNAME"
-assert_eq "tester" "$ALARM_USER" "wizard updates ALARM_USER"
+assert_eq "rootadmin" "$ROOT_USER" "wizard updates ROOT_USER"
 assert_eq "root123" "$ROOT_PASSWORD" "wizard updates ROOT_PASSWORD"
+assert_eq "tester" "$ALARM_USER" "wizard updates ALARM_USER"
 assert_eq "user123" "$ALARM_PASSWORD" "wizard updates ALARM_PASSWORD"
 assert_eq "8G" "$IMG_SIZE" "wizard updates IMG_SIZE"
 assert_eq "1" "$COMPRESS" "wizard sets COMPRESS to 1 on 'y'"
@@ -76,6 +79,7 @@ assert_eq "1" "$COMPRESS" "wizard sets COMPRESS to 1 on 'y'"
 USE_GUM=0
 COMPRESS=1
 interactive_wizard_bash <<EOF >/dev/null
+
 
 
 
@@ -93,8 +97,9 @@ cancel_out="$( (
     interactive_wizard_bash <<EOF
 0.1.0
 raspberrypi
-alarm
+root
 
+alarm
 
 4G
 y

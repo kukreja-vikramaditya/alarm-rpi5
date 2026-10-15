@@ -29,6 +29,7 @@ init_config() {
     IMG_SIZE="${_arg_img_size:-${IMG_SIZE:-4G}}"
     VERSION="${_arg_version:-${VERSION:-0.1.0}}"
     TARGET_HOSTNAME="${_arg_hostname:-${TARGET_HOSTNAME:-raspberrypi}}"
+    ROOT_USER="${ROOT_USER:-root}"
     ROOT_PASSWORD="${ROOT_PASSWORD:-root}"
     ALARM_USER="${ALARM_USER:-alarm}"
     ALARM_PASSWORD="${ALARM_PASSWORD:-alarm}"
