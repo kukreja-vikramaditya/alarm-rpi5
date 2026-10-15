@@ -80,7 +80,8 @@ bootstrap_rootfs() {
     local -a packages=(
         base
         linux-rpi
-        raspberrypi-firmware
+        firmware-raspberrypi
+        raspberrypi-bootloader
         archlinuxarm-keyring
         openssh
         sudo

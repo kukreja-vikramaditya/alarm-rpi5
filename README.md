@@ -201,7 +201,8 @@ The image ships with a minimal set of packages:
 |---------|-----|
 | `base` | Core Arch system |
 | `linux-rpi` | RPi Foundation kernel with BCM2712 (Pi 5) support |
-| `raspberrypi-firmware` | Boot firmware (`start4.elf`, device trees) |
+| `firmware-raspberrypi` | Broadcom wireless/Bluetooth firmware |
+| `raspberrypi-bootloader` | Boot firmware (`start4.elf`, `fixup4.dat`, etc.) |
 | `archlinuxarm-keyring` | Package signing keys |
 | `openssh` | Remote access (enabled by default) |
 | `networkmanager` + `iwd` | Wired and wireless networking |
