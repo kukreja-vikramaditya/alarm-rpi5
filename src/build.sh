@@ -106,7 +106,7 @@ bootstrap_rootfs() {
     PACMAN_CONF="$(mktemp -- /tmp/pacman-aarch64.XXXXXX.conf)"
     sed "s|@ALARM_MIRROR@|${ALARM_MIRROR}|g" "${DATA_DIR}/pacman-bootstrap.conf" >"${PACMAN_CONF}"
 
-    # Base packages for a working RPi 5 system
+    # Base packages for a working RPi 5 system + conveniences
     local -a packages=(
         base
         linux-rpi
@@ -117,6 +117,12 @@ bootstrap_rootfs() {
         sudo
         nano
         e2fsprogs
+        git
+        tmux
+        zsh
+        curl
+        wget
+        unzip
     )
 
     # Append user-specified extra packages

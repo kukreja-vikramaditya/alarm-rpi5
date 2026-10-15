@@ -265,6 +265,11 @@ The image ships with a minimal set of packages:
 | `openssh` | Remote access (enabled by default) |
 | `sudo` | Privilege escalation |
 | `nano` | Text editor |
+| `git` | Version control |
+| `tmux` | Terminal multiplexer |
+| `zsh` | Interactive Z shell |
+| `curl` + `wget` | Network download utilities |
+| `unzip` | Archive extraction utility |
 
 ## How it works
 
