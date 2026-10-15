@@ -192,6 +192,11 @@ configure_system() {
     chmod 755 "${ROOTFS}/usr/local/bin/install-ui"
     ln -sf -- install-ui "${ROOTFS}/usr/local/bin/install-ui.sh"
 
+    # Pre-configure Xorg OutputClass for Raspberry Pi 5 vc4 KMS driver
+    mkdir -p -- "${ROOTFS}/etc/X11/xorg.conf.d"
+    cp -- "${DATA_DIR}/99-vc4.conf" "${ROOTFS}/etc/X11/xorg.conf.d/99-vc4.conf"
+    chmod 644 "${ROOTFS}/etc/X11/xorg.conf.d/99-vc4.conf"
+
     # Ensure system config files have standard read permissions
     chmod 644 "${ROOTFS}/etc/hostname" "${ROOTFS}/etc/hosts" "${ROOTFS}/etc/locale.conf" "${ROOTFS}/etc/locale.gen" "${ROOTFS}/etc/pacman.conf" "${ROOTFS}/etc/fstab" "${ROOTFS}/etc/systemd/network/20-wired.network"
 

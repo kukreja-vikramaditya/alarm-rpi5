@@ -59,6 +59,18 @@ case "$TARGET_DE" in
             sed -i 's/^#*greeter-session=.*/greeter-session=lightdm-gtk-greeter/' /etc/lightdm/lightdm.conf
         fi
 
+        # Ensure Xorg uses native modesetting KMS driver with vc4
+        mkdir -p /etc/X11/xorg.conf.d
+        rm -f /etc/X11/xorg.conf.d/20-modesetting.conf
+        cat > /etc/X11/xorg.conf.d/99-vc4.conf <<'XORG'
+Section "OutputClass"
+    Identifier "vc4"
+    MatchDriver "vc4"
+    Driver "modesetting"
+    Option "PrimaryGPU" "true"
+EndSection
+XORG
+
         echo "==> Step 3/3: Enabling LightDM login manager service..."
         systemctl enable lightdm.service
         ;;

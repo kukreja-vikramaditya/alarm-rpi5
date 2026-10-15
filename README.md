@@ -322,14 +322,31 @@ sudo pacman -Syu --needed --noconfirm \
 Extremely fast, minimal RAM footprint (~300MB idle), and rock-solid:
 
 ```bash
+# 1. Remove legacy fbdev driver to prevent "Cannot run in framebuffer mode" error
+sudo pacman -Rdd --noconfirm xf86-video-fbdev 2>/dev/null || true
+
+# 2. Install XFCE, LightDM greeter, and Xorg
 sudo pacman -S --needed --noconfirm \
   xfce4 xfce4-goodies \
   lightdm lightdm-gtk-greeter \
   xorg-server xorg-xinit
 
-# Configure LightDM to use lightdm-gtk-greeter
+# 3. Configure Xorg to bind the Pi 5 vc4 KMS driver as primary GPU
+sudo mkdir -p /etc/X11/xorg.conf.d
+sudo rm -f /etc/X11/xorg.conf.d/20-modesetting.conf
+cat <<'EOF' | sudo tee /etc/X11/xorg.conf.d/99-vc4.conf
+Section "OutputClass"
+    Identifier "vc4"
+    MatchDriver "vc4"
+    Driver "modesetting"
+    Option "PrimaryGPU" "true"
+EndSection
+EOF
+
+# 4. Configure LightDM to use lightdm-gtk-greeter
 sudo sed -i 's/^#*greeter-session=.*/greeter-session=lightdm-gtk-greeter/' /etc/lightdm/lightdm.conf
 
+# 5. Enable and start LightDM
 sudo systemctl enable lightdm.service
 sudo reboot
 ```
@@ -340,6 +357,7 @@ sudo reboot
 * **`lightdm-gtk-greeter`**: The visual GTK-based login screen UI rendered by LightDM where you enter your username and password.
 * **`xorg-server`**: The traditional X11 display server required by X11-based desktops like XFCE.
 * **`xorg-xinit`**: Utility for launching and configuring manual X11 sessions (provides `startx`).
+* **`99-vc4.conf`**: Directs Xorg to bind the Raspberry Pi 5 `vc4` kernel DRM driver to the native `modesetting` DDX driver with hardware Glamor acceleration, preventing the fatal multi-device framebuffer busID crash.
 
 ---
 

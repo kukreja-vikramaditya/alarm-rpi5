@@ -97,6 +97,9 @@ assert_file_exists "${DATA_DIR}/20-wired.network" "20-wired.network exists in da
 assert_file_exists "${DATA_DIR}/alarm-expand-root.sh" "alarm-expand-root.sh exists in data/"
 assert_file_exists "${DATA_DIR}/alarm-expand-root.service" "alarm-expand-root.service exists in data/"
 assert_file_exists "${DATA_DIR}/install-ui.sh" "install-ui.sh exists in data/"
+assert_file_exists "${DATA_DIR}/99-vc4.conf" "99-vc4.conf exists in data/"
+assert_contains "$(cat "${DATA_DIR}/99-vc4.conf")" "MatchDriver \"vc4\"" "99-vc4.conf matches vc4 driver"
+assert_contains "$(cat "${DATA_DIR}/99-vc4.conf")" "Option \"PrimaryGPU\" \"true\"" "99-vc4.conf sets PrimaryGPU"
 
 # Test 4: Partition boundary math
 boot_size=256
