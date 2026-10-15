@@ -100,6 +100,8 @@ assert_file_exists "${DATA_DIR}/install-ui.sh" "install-ui.sh exists in data/"
 assert_file_exists "${DATA_DIR}/99-vc4.conf" "99-vc4.conf exists in data/"
 assert_contains "$(cat "${DATA_DIR}/99-vc4.conf")" "MatchDriver \"vc4\"" "99-vc4.conf matches vc4 driver"
 assert_contains "$(cat "${DATA_DIR}/99-vc4.conf")" "Option \"PrimaryGPU\" \"true\"" "99-vc4.conf sets PrimaryGPU"
+assert_file_exists "${DATA_DIR}/60-lightdm-gtk-greeter.conf" "60-lightdm-gtk-greeter.conf exists in data/"
+assert_contains "$(cat "${DATA_DIR}/60-lightdm-gtk-greeter.conf")" "greeter-session=lightdm-gtk-greeter" "60-lightdm-gtk-greeter.conf sets greeter"
 
 # Test 4: Partition boundary math
 boot_size=256
