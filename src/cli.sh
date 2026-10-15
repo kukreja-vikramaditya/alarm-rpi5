@@ -7,7 +7,7 @@ usage() {
     local script_dir="${SCRIPT_DIR:-.}"
 
     cat <<USAGE
-Usage: sudo ./${script_name} [OPTIONS]
+Usage: ./${script_name} [OPTIONS]
 
 Build an Arch Linux ARM image for Raspberry Pi 5.
 Runs in interactive wizard mode by default when attached to a terminal.

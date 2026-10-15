@@ -17,16 +17,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install ShellCheck, shfmt & Charm Gum
-        run: |
-          sudo mkdir -p /etc/apt/keyrings
-          curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg
-          echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
-          sudo apt-get update
-          sudo apt-get install -y shellcheck shfmt gum
+      - name: Build Arch Linux builder container
+        run: docker build -t alarm-rpi5-builder .
 
-      - name: Run test suites (10 suites)
-        run: ./tests/run_all.sh
+      - name: Run test suites inside Arch Linux container (10 suites)
+        run: |
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -w /workspace \
+            alarm-rpi5-builder ./tests/run_all.sh
 
   build:
     name: Build & Publish Rolling Snapshot

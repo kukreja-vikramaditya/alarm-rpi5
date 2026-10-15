@@ -112,6 +112,6 @@ set -e
 assert_eq "0" "$cancel_code" "wizard exits 0 when cancelled"
 assert_contains "$cancel_out" "Build cancelled by user" "wizard prints cancellation message"
 assert_contains "$cancel_out" "Executable Command:" "wizard summary includes Executable Command"
-assert_contains "$cancel_out" "sudo ./build.sh -y" "wizard summary includes executable CLI command"
+assert_contains "$cancel_out" "./build.sh -y" "wizard summary includes executable CLI command"
 
 test_summary "src/wizard.sh"

@@ -25,8 +25,8 @@ The built image is pre-configured with default credentials and passwordless `sud
 
 > [!TIP]
 > **Customizing Credentials During Build:**
-> - **Interactive Wizard:** Run `./docker-build.sh` or `sudo ./build.sh` without `-y` to customize usernames and passwords interactively.
-> - **Environment Variables:** Set `ALARM_USER`, `ALARM_PASSWORD`, `ROOT_USER`, and `ROOT_PASSWORD` (e.g., `ALARM_USER=myuser ALARM_PASSWORD=mypass ./docker-build.sh -y`).
+> - **Interactive Wizard:** Run `./build.sh` without `-y` to customize usernames and passwords interactively.
+> - **Environment Variables:** Set `ALARM_USER`, `ALARM_PASSWORD`, `ROOT_USER`, and `ROOT_PASSWORD` (e.g., `ALARM_USER=myuser ALARM_PASSWORD=mypass ./build.sh -y`).
 
 > [!IMPORTANT]
 > **Security Notice:**
@@ -38,37 +38,30 @@ The built image is pre-configured with default credentials and passwordless `sud
 
 ## Requirements
 
-An **x86_64 Arch Linux** host (bare metal, VM, or container).
+- **Docker** (Docker Desktop on Windows/macOS, or Docker Engine on Linux).
+  You do **not** need an Arch Linux PC. Everything (including `pacstrap`, `arch-chroot`, `qemu-user-static`, and Charm `gum`) is pre-installed inside the isolated Arch Linux builder container.
 
-```bash
-sudo pacman -S --needed --noconfirm \
-  qemu-user-static qemu-user-static-binfmt \
-  arch-install-scripts \
-  dosfstools e2fsprogs \
-  parted xz gum
-
-sudo systemctl restart systemd-binfmt.service
-```
+> [!NOTE]
+> If building natively on an Arch Linux host without Docker, pass `ALARM_NATIVE=1 sudo ./build.sh`.
 
 ## Quick start
 
-### Method 1: Docker (Recommended — 100% Isolated, Zero Host Pollution)
-
-No packages or build tools need to be installed on your host system:
+Build directly from any Linux distribution (Ubuntu, Debian, Fedora, Arch), macOS, or Windows (WSL 2):
 
 ```bash
-./docker-build.sh
+./build.sh
+```
+
+- When run in a terminal, it launches the interactive **Charm Gum Wizard** automatically.
+- For unattended / automated runs (e.g. CI or scripts), pass `-y`:
+
+```bash
+./build.sh -y
 ```
 
 Or pass custom flags:
 ```bash
-./docker-build.sh --version 1.0.0 --img-size 8G
-```
-
-### Method 2: Native Host Build
-
-```bash
-sudo ./build.sh
+./build.sh -y --version 1.1.0-snapshot --img-size 4G --user pi
 ```
 
 Output lands in `dist/`. That's it.
@@ -126,7 +119,7 @@ alarm-rpi5/
 ## Usage
 
 ```
-sudo ./build.sh [OPTIONS]
+./build.sh [OPTIONS]
 
 Options:
   -c, --check              Check host environment and dependencies without building
@@ -152,23 +145,23 @@ Options:
 ./build.sh --check
 
 # Default build (launches interactive wizard automatically on terminal)
-sudo ./build.sh
+./build.sh
 
 # Non-interactive / unattended build (uses defaults or flags immediately)
-sudo ./build.sh -y
+./build.sh -y
 
 # Custom version and output
-sudo ./build.sh -v 1.0.0 -o /mnt/images
+./build.sh -y -v 1.1.0-snapshot -o ./dist
 
 # Larger image with extra packages
-IMG_SIZE=8G EXTRA_PACKAGES="git htop vim" sudo ./build.sh
+IMG_SIZE=8G EXTRA_PACKAGES="git htop vim" ./build.sh -y
 
 # Skip compression for faster iteration
-sudo ./build.sh --no-compress
+./build.sh -y --no-compress
 
 # Override hostname, timezone, and user credentials
 TARGET_HOSTNAME=mypi TIMEZONE=Asia/Kolkata ALARM_USER=vikram ALARM_PASSWORD=secret \
-  sudo ./build.sh
+  ./build.sh -y
 ```
 
 ## Configuration & Environment Variables

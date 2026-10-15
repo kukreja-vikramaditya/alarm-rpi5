@@ -46,19 +46,65 @@ main() {
     # 1. Parse CLI arguments
     parse_cli "$@"
 
-    # 2. Diagnostic mode (--check) runs without root
+    # 2. Host-to-Container Bridge
+    # Unless inside a container (/.dockerenv / ALARM_INTERNAL_BUILD) or forced native mode,
+    # build seamlessly inside the Arch Linux container image.
+    if [[ ! -f /.dockerenv && -z "${ALARM_INTERNAL_BUILD:-}" && "${ALARM_NATIVE:-0}" -ne 1 ]]; then
+        if [[ -n "${_arg_check:-}" ]]; then
+            log_phase "Host Docker Environment Diagnostics"
+            if command -v docker &>/dev/null; then
+                log_info "Docker CLI: installed ($(command -v docker))"
+                if docker info &>/dev/null 2>&1; then
+                    log_info "Docker daemon: running and accessible"
+                else
+                    log_warn "Docker daemon: not accessible or requires sudo"
+                fi
+            else
+                log_error "Docker CLI: not found in PATH"
+            fi
+            return 0
+        fi
+
+        if ! command -v docker &>/dev/null || ! docker --version &>/dev/null; then
+            die "Docker is required to build Arch Linux ARM images on non-Arch hosts.
+Please install Docker and ensure the Docker daemon is running.
+If using Docker Desktop on Windows with WSL 2, enable WSL Integration in:
+  Docker Desktop -> Settings -> Resources -> WSL Integration"
+        fi
+
+        log_info "Ensuring Arch Linux builder image (alarm-rpi5-builder) is up to date..."
+        docker build -t alarm-rpi5-builder -f "${SCRIPT_DIR}/Dockerfile" "${SCRIPT_DIR}"
+
+        mkdir -p "${SCRIPT_DIR}/dist"
+
+        local -a tty_flags=()
+        if [[ -t 0 && -t 1 ]]; then
+            tty_flags+=("-it")
+        fi
+
+        log_info "Running build inside isolated Arch Linux container..."
+        exec docker run --rm --privileged "${tty_flags[@]}" \
+            -e "ALARM_INTERNAL_BUILD=1" \
+            -v /dev:/dev \
+            -v /sys:/sys \
+            -v "${SCRIPT_DIR}:/workspace" \
+            -w /workspace \
+            alarm-rpi5-builder "$@"
+    fi
+
+    # 3. Diagnostic mode (--check) runs without root
     if [[ -n "${_arg_check}" ]]; then
         init_config
         check_environment
         return $?
     fi
 
-    # 3. Explicit interactive mode without a tty fails early
+    # 4. Explicit interactive mode without a tty fails early
     if [[ -n "${_arg_interactive:-}" && (! -t 0 || ! -t 1) ]]; then
         die "Interactive mode requires an interactive terminal (stdin and stdout must be a tty)."
     fi
 
-    # 4. IMMEDIATE ROOT/SUDO CHECK — RUNS BEFORE ANY WIZARD QUESTIONS
+    # 5. IMMEDIATE ROOT/SUDO CHECK — RUNS BEFORE ANY WIZARD QUESTIONS
     if [[ $EUID -ne 0 ]]; then
         if [[ -t 0 && -t 1 ]]; then
             log_warn "Root privileges are required to build disk images (mount, losetup, pacstrap)."

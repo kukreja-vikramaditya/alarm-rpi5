@@ -58,7 +58,7 @@ interactive_wizard_gum() {
     recompute_image_paths
 
     local exec_cmd
-    exec_cmd="sudo ./${SCRIPT_NAME:-build.sh} -y -v \"${VERSION}\" --hostname \"${TARGET_HOSTNAME}\" --root-user \"${ROOT_USER}\" -u \"${ALARM_USER}\" -s \"${IMG_SIZE}\""
+    exec_cmd="./${SCRIPT_NAME:-build.sh} -y -v \"${VERSION}\" --hostname \"${TARGET_HOSTNAME}\" --root-user \"${ROOT_USER}\" -u \"${ALARM_USER}\" -s \"${IMG_SIZE}\""
     if [[ "${COMPRESS}" -eq 0 ]]; then
         exec_cmd+=" --no-compress"
     fi
@@ -128,7 +128,7 @@ interactive_wizard_bash() {
     recompute_image_paths
 
     local exec_cmd
-    exec_cmd="sudo ./${SCRIPT_NAME:-build.sh} -y -v \"${VERSION}\" --hostname \"${TARGET_HOSTNAME}\" --root-user \"${ROOT_USER:-root}\" -u \"${ALARM_USER}\" -s \"${IMG_SIZE}\""
+    exec_cmd="./${SCRIPT_NAME:-build.sh} -y -v \"${VERSION}\" --hostname \"${TARGET_HOSTNAME}\" --root-user \"${ROOT_USER:-root}\" -u \"${ALARM_USER}\" -s \"${IMG_SIZE}\""
     if [[ "${COMPRESS}" -eq 0 ]]; then
         exec_cmd+=" --no-compress"
     fi

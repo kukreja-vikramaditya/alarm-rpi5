@@ -26,7 +26,7 @@ source "${SRC_DIR}/cli.sh"
 
 # Test 1: usage() output contains key documentation
 usage_txt="$(SCRIPT_NAME="build.sh" usage)"
-assert_contains "$usage_txt" "Usage: sudo ./build.sh [OPTIONS]" "usage lists correct command"
+assert_contains "$usage_txt" "Usage: ./build.sh [OPTIONS]" "usage lists correct command"
 assert_contains "$usage_txt" "--check" "usage lists --check"
 assert_contains "$usage_txt" "--interactive" "usage lists --interactive"
 assert_contains "$usage_txt" "--non-interactive" "usage lists --non-interactive"
@@ -176,13 +176,13 @@ help_out="$(parse_cli --help 2>&1)"
 help_code=$?
 set -e
 assert_eq "0" "$help_code" "parse_cli --help exits with 0"
-assert_contains "$help_out" "Usage: sudo" "--help prints usage"
+assert_contains "$help_out" "Usage: ./" "--help prints usage"
 
 set +e
 h_out="$(parse_cli -h 2>&1)"
 h_code=$?
 set -e
 assert_eq "0" "$h_code" "parse_cli -h exits with 0"
-assert_contains "$h_out" "Usage: sudo" "-h prints usage"
+assert_contains "$h_out" "Usage: ./" "-h prints usage"
 
 test_summary "src/cli.sh"

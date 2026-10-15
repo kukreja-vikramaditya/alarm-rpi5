@@ -2,15 +2,8 @@
 # shellcheck disable=SC2034 # GUM_BIN, USE_GUM, and GUM_INITIALIZED are consumed across sourced modules
 # src/terminal.sh — Terminal styling, Charm Gum discovery, spinners, and status badges
 
-# Require gum to be available on PATH; early quit if not found
-if ! command -v gum &>/dev/null; then
-    echo "==> Error: 'gum' is required but not found in PATH." >&2
-    echo "    Please install charmbracelet/gum to continue (e.g. 'sudo pacman -S gum' or 'brew install gum')." >&2
-    exit 1
-fi
-
-# shellcheck disable=SC2034 # GUM_BIN, USE_GUM, and GUM_INITIALIZED are consumed across modules
-GUM_BIN="$(command -v gum)"
+# Gum is pre-installed in the Arch Linux builder container
+GUM_BIN="$(command -v gum 2>/dev/null || echo "gum")"
 readonly GUM_BIN
 export GUM_BIN
 USE_GUM=1

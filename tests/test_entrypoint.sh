@@ -28,13 +28,13 @@ fi
 
 # Test 3: --help and -h flags
 out="$("$BIN" --help 2>&1 || true)"
-assert_contains "$out" "Usage: sudo ./build.sh" "Flag --help displays usage"
+assert_contains "$out" "Usage: ./build.sh" "Flag --help displays usage"
 assert_contains "$out" "--check" "Flag --help lists --check"
 assert_contains "$out" "--interactive" "Flag --help lists --interactive"
 assert_contains "$out" "--non-interactive" "Flag --help lists --non-interactive"
 
 out_h="$("$BIN" -h 2>&1 || true)"
-assert_contains "$out_h" "Usage: sudo ./build.sh" "Flag -h displays usage"
+assert_contains "$out_h" "Usage: ./build.sh" "Flag -h displays usage"
 
 # Test 4: Unknown flags exit 1
 set +e
@@ -54,33 +54,39 @@ for opt in "-o" "-v" "-s" "--hostname"; do
     assert_contains "$err_out" "Missing argument for $opt" "missing arg error message"
 done
 
-# Test 6: Non-root invocation
+# Test 6: Host mode enforces Docker
 set +e
-out="$("$BIN" 2>&1)"
+host_out="$(ALARM_NATIVE=0 "$BIN" 2>&1 || true)"
+set -e
+assert_contains "$host_out" "Docker is required" "host mode enforces Docker requirement"
+
+# Test 7: Container / native non-root invocation
+set +e
+out="$(ALARM_NATIVE=1 "$BIN" 2>&1)"
 code=$?
 set -e
 assert_eq "1" "$code" "non-root build attempt exits with code 1"
 assert_contains "$out" "This script must be run as root" "non-root error message"
 
-# Test 7: Non-tty interactive invocation
+# Test 8: Non-tty interactive invocation in container/native
 set +e
-out="$("$BIN" --interactive 2>&1)"
+out="$(ALARM_NATIVE=1 "$BIN" --interactive 2>&1)"
 code=$?
 set -e
 assert_eq "1" "$code" "--interactive without tty exits with code 1"
 assert_contains "$out" "requires an interactive terminal" "--interactive non-tty message"
 
-# Test 8: Non-interactive batch flag (-y) without root
+# Test 9: Non-interactive batch flag (-y) without root in container/native
 set +e
-out="$("$BIN" -y 2>&1)"
+out="$(ALARM_NATIVE=1 "$BIN" -y 2>&1)"
 code=$?
 set -e
 assert_eq "1" "$code" "-y without root exits with code 1"
 assert_contains "$out" "This script must be run as root" "-y non-root message"
 
-# Test 9: --check diagnostics execution
+# Test 10: --check diagnostics execution
 set +e
-out="$("$BIN" --check 2>&1)"
+out="$(ALARM_NATIVE=1 "$BIN" --check 2>&1)"
 code=$?
 set -e
 assert_contains "$out" "Host Environment Diagnostics" "--check header present"
