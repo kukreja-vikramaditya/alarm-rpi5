@@ -54,8 +54,14 @@ case "$TARGET_DE" in
             lightdm lightdm-gtk-greeter \
             xorg-server xorg-xinit
 
-        # Configure LightDM to use lightdm-gtk-greeter
+        # Configure LightDM to use lightdm-gtk-greeter via drop-in and fix any typos
+        mkdir -p /etc/lightdm/lightdm.conf.d
+        cat > /etc/lightdm/lightdm.conf.d/60-lightdm-gtk-greeter.conf <<'GREETER'
+[Seat:*]
+greeter-session=lightdm-gtk-greeter
+GREETER
         if [[ -f /etc/lightdm/lightdm.conf ]]; then
+            sed -i 's/greeter-session-lightdm-gtk-greeter/greeter-session=lightdm-gtk-greeter/' /etc/lightdm/lightdm.conf
             sed -i 's/^#*greeter-session=.*/greeter-session=lightdm-gtk-greeter/' /etc/lightdm/lightdm.conf
         fi
 
