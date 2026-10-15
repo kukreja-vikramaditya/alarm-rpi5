@@ -150,7 +150,7 @@ Options:
   -o, --output-dir DIR     Output directory       (default: ${SCRIPT_DIR}/dist)
   -v, --version VER        Image version string   (default: 0.1.0)
   -s, --img-size SIZE      Raw image size         (default: 4G)
-      --hostname NAME      Target hostname        (default: alarm-rpi5)
+      --hostname NAME      Target hostname        (default: raspberrypi)
       --no-compress        Skip xz compression
       --no-gum             Disable Gum styling and interactive elements
   -h, --help               Show this help
@@ -230,7 +230,7 @@ readonly OUTPUT_DIR="$_output_dir"
 unset _output_dir
 
 readonly BOOT_SIZE_MIB="${BOOT_SIZE_MIB:-256}"
-TARGET_HOSTNAME="${_arg_hostname:-${TARGET_HOSTNAME:-alarm-rpi5}}"
+TARGET_HOSTNAME="${_arg_hostname:-${TARGET_HOSTNAME:-raspberrypi}}"
 ROOT_PASSWORD="${ROOT_PASSWORD:-root}"
 ALARM_USER="${ALARM_USER:-alarm}"
 ALARM_PASSWORD="${ALARM_PASSWORD:-alarm}"
@@ -357,7 +357,7 @@ interactive_wizard_gum() {
     new_user="$("$GUM_BIN" input --password --header "${ALARM_USER} Password (leave empty for default: ${ALARM_PASSWORD})")"
     [[ -n "$new_user" ]] && ALARM_PASSWORD="$new_user"
 
-    IMG_SIZE="$("$GUM_BIN" choose --header "Select raw disk image size:" "4G" "8G" "16G" "32G")"
+    IMG_SIZE="$("$GUM_BIN" choose --header "Build workspace disk size (4G fits on any SD card 4GB+):" "4G" "8G" "16G" "32G")"
 
     local comp_sel
     comp_sel="$("$GUM_BIN" choose --header "XZ Compression:" "Enabled (.img.xz - smaller, recommended)" "Disabled (.img - raw)")"
@@ -409,7 +409,7 @@ interactive_wizard_bash() {
     echo ""
     [[ -n "$in_user_pw" ]] && ALARM_PASSWORD="$in_user_pw"
 
-    read -r -p "Raw image size (4G, 8G, 16G, 32G) [${IMG_SIZE}]: " in_size
+    read -r -p "Build workspace disk size (4G fits on any SD card >=4GB) [${IMG_SIZE}]: " in_size
     [[ -n "$in_size" ]] && IMG_SIZE="$in_size"
 
     read -r -p "Enable XZ compression? (y/n) [y]: " in_comp

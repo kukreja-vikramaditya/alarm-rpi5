@@ -53,7 +53,7 @@ Options:
   -o, --output-dir DIR     Output directory       (default: ./dist)
   -v, --version VER        Image version string   (default: 0.1.0)
   -s, --img-size SIZE      Raw image size         (default: 4G)
-      --hostname NAME      Target hostname        (default: alarm-rpi5)
+      --hostname NAME      Target hostname        (default: raspberrypi)
       --no-compress        Skip xz compression
       --no-gum             Disable Gum styling and interactive elements
   -h, --help               Show help
@@ -91,11 +91,11 @@ All config has sensible defaults. Flags take precedence over environment variabl
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `IMG_SIZE` | `4G` | Raw image size before shrinking |
+| `IMG_SIZE` | `4G` | Raw image size before shrinking (fits on any SD card >=4GB) |
 | `VERSION` | `0.1.0` | Embedded in output filename |
 | `IMG_NAME` | `alarm-rpi5-{ver}-{date}` | Full override for output filename |
 | `BOOT_SIZE_MIB` | `256` | Boot partition size in MiB |
-| `TARGET_HOSTNAME` | `alarm-rpi5` | System hostname |
+| `TARGET_HOSTNAME` | `raspberrypi` | System hostname |
 | `ROOT_PASSWORD` | `root` | Root password |
 | `ALARM_USER` | `alarm` | Non-root user (wheel group) |
 | `ALARM_PASSWORD` | `alarm` | Non-root user password |
@@ -136,7 +136,9 @@ The Pi 5 supports NVMe boot natively. Flash to your NVMe drive instead of SD, an
    ```bash
    ssh alarm@<ip>       # password: alarm
    # or
-   ssh root@<ip>        # password: root
+   ssh root@<ip>            # password: root
+   # or using hostname:
+   ssh alarm@raspberrypi.local
    ```
 4. Update immediately:
    ```bash
