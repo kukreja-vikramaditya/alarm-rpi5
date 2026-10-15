@@ -245,13 +245,26 @@ make ARCH=arm64 -j$(nproc) Image modules dtbs
 
 ## Testing
 
-Run the automated test suite:
+Run all unit and integration test suites (over 200 automated checks across every module):
 
 ```bash
-./tests/test_cli.sh
+./tests/run_all.sh
 ```
 
-To run diagnostic checks on your host system:
+Or run test suites for individual components directly:
+
+```bash
+./tests/test_ui.sh          # src/ui.sh (styling, logging, badges, spinners)
+./tests/test_cleanup.sh     # src/cleanup.sh (unmounts, signal traps, temp cleanup)
+./tests/test_cli.sh         # src/cli.sh (argument parsing, flags, usage)
+./tests/test_config.sh      # src/config.sh (defaults, env overrides, path math)
+./tests/test_wizard.sh      # src/wizard.sh (interactive wizards, tty guards)
+./tests/test_doctor.sh      # src/doctor.sh (environment diagnostics, package map)
+./tests/test_build.sh       # src/build.sh (boot configs, partition math, pacman)
+./tests/test_entrypoint.sh  # build-alarm-rpi5.sh & build.sh
+```
+
+To run diagnostic checks on your host system without building:
 
 ```bash
 ./build-alarm-rpi5.sh --check

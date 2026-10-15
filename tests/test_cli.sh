@@ -1,176 +1,157 @@
 #!/usr/bin/env bash
-#
-# tests/test_cli.sh — Test suite for build-alarm-rpi5.sh CLI interface and diagnostics
-#
+# tests/test_cli.sh — Unit tests for src/cli.sh
 set -euo pipefail
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." &>/dev/null && pwd)"
-BIN="${SCRIPT_DIR}/build-alarm-rpi5.sh"
+TEST_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+# shellcheck source=tests/test_helper.sh
+source "${TEST_DIR}/test_helper.sh"
 
-PASSED=0
-FAILED=0
+echo "=== Unit Tests: src/cli.sh ==="
 
-assert_eq() {
-    local expected="$1"
-    local actual="$2"
-    local test_name="$3"
-    if [[ "$expected" == "$actual" ]]; then
-        printf '  [PASS] %s\n' "$test_name"
-        ((PASSED++)) || true
-    else
-        printf '  [FAIL] %s: expected "%s", got "%s"\n' "$test_name" "$expected" "$actual"
-        ((FAILED++)) || true
-    fi
-}
-
-assert_contains() {
-    local haystack="$1"
-    local needle="$2"
-    local test_name="$3"
-    if [[ "$haystack" == *"$needle"* ]]; then
-        printf '  [PASS] %s\n' "$test_name"
-        ((PASSED++)) || true
-    else
-        printf '  [FAIL] %s: expected to contain "%s"\n' "$test_name" "$needle"
-        ((FAILED++)) || true
-    fi
-}
-
-echo "=== Running ALARM RPi 5 Builder Tests ==="
-echo ""
-
-# Test 1: Bash syntax check on all entry points and modules
-if bash -n "$BIN"; then
-    printf '  [PASS] Entry script syntax validation (bash -n)\n'
-    ((PASSED++)) || true
+# Syntax validation
+if bash -n "${SRC_DIR}/cli.sh"; then
+    assert_eq "0" "0" "src/cli.sh syntax validation (bash -n)"
 else
-    printf '  [FAIL] Entry script syntax validation failed\n'
-    ((FAILED++)) || true
+    assert_eq "0" "1" "src/cli.sh syntax validation (bash -n)"
 fi
 
-for mod in "${SCRIPT_DIR}"/src/*.sh; do
-    mod_name="$(basename "$mod")"
-    if bash -n "$mod"; then
-        printf '  [PASS] Module syntax: src/%s (bash -n)\n' "$mod_name"
-        ((PASSED++)) || true
-    else
-        printf '  [FAIL] Module syntax failed: src/%s\n' "$mod_name"
-        ((FAILED++)) || true
-    fi
-done
+# Source dependencies
+# shellcheck source=src/ui.sh
+source "${SRC_DIR}/ui.sh"
+# shellcheck source=src/cli.sh
+source "${SRC_DIR}/cli.sh"
 
-# Test 2: --help flag exits 0 and displays usage
-output="$("$BIN" --help 2>&1 || true)"
-assert_contains "$output" "Usage: sudo ./build-alarm-rpi5.sh" "Flag --help displays usage"
-assert_contains "$output" "--check" "Flag --help lists --check"
-assert_contains "$output" "--interactive" "Flag --help lists --interactive"
-assert_contains "$output" "--non-interactive" "Flag --help lists --non-interactive"
-assert_contains "$output" "--no-gum" "Flag --help lists --no-gum"
+# Test 1: usage() output contains key documentation
+usage_txt="$(SCRIPT_NAME="build-alarm-rpi5.sh" usage)"
+assert_contains "$usage_txt" "Usage: sudo ./build-alarm-rpi5.sh [OPTIONS]" "usage lists correct command"
+assert_contains "$usage_txt" "--check" "usage lists --check"
+assert_contains "$usage_txt" "--interactive" "usage lists --interactive"
+assert_contains "$usage_txt" "--non-interactive" "usage lists --non-interactive"
+assert_contains "$usage_txt" "--output-dir" "usage lists --output-dir"
+assert_contains "$usage_txt" "--version" "usage lists --version"
+assert_contains "$usage_txt" "--img-size" "usage lists --img-size"
+assert_contains "$usage_txt" "--hostname" "usage lists --hostname"
+assert_contains "$usage_txt" "--no-compress" "usage lists --no-compress"
+assert_contains "$usage_txt" "--no-gum" "usage lists --no-gum"
 
-# Test 3: -h flag behaves identically
-output="$("$BIN" -h 2>&1 || true)"
-assert_contains "$output" "Usage: sudo ./build-alarm-rpi5.sh" "Flag -h displays usage"
+# Helper to reset cli arg globals before each test
+reset_args() {
+    _arg_check=""
+    _arg_interactive=""
+    _arg_non_interactive=""
+    _arg_output_dir=""
+    _arg_version=""
+    _arg_img_size=""
+    _arg_hostname=""
+    _arg_no_compress=""
+    USE_GUM=1
+}
 
-# Test 4: Unknown option exits with error
-set +e
-output="$("$BIN" --bogus-option 2>&1)"
-code=$?
-set -e
-assert_eq "1" "$code" "Unknown flag returns exit code 1"
-assert_contains "$output" "Unknown option: --bogus-option" "Unknown flag error message"
+# Test 2: parse_cli flags
+reset_args
+parse_cli "--check"
+assert_eq "1" "$_arg_check" "parse_cli sets _arg_check for --check"
 
-# Test 5: Missing argument for options
-for opt in "-o" "-v" "-s" "--hostname"; do
+reset_args
+parse_cli "-c"
+assert_eq "1" "$_arg_check" "parse_cli sets _arg_check for -c"
+
+reset_args
+parse_cli "--interactive"
+assert_eq "1" "$_arg_interactive" "parse_cli sets _arg_interactive for --interactive"
+
+reset_args
+parse_cli "-i"
+assert_eq "1" "$_arg_interactive" "parse_cli sets _arg_interactive for -i"
+
+reset_args
+parse_cli "--non-interactive"
+assert_eq "1" "$_arg_non_interactive" "parse_cli sets _arg_non_interactive for --non-interactive"
+
+reset_args
+parse_cli "-y"
+assert_eq "1" "$_arg_non_interactive" "parse_cli sets _arg_non_interactive for -y"
+
+reset_args
+parse_cli "--batch"
+assert_eq "1" "$_arg_non_interactive" "parse_cli sets _arg_non_interactive for --batch"
+
+reset_args
+parse_cli "--no-gum"
+assert_eq "0" "$USE_GUM" "parse_cli disables USE_GUM on --no-gum"
+
+reset_args
+parse_cli "--output-dir" "/custom/dist"
+assert_eq "/custom/dist" "$_arg_output_dir" "parse_cli sets _arg_output_dir for --output-dir"
+
+reset_args
+parse_cli "-o" "/custom/dist2"
+assert_eq "/custom/dist2" "$_arg_output_dir" "parse_cli sets _arg_output_dir for -o"
+
+reset_args
+parse_cli "--version" "2.5.0"
+assert_eq "2.5.0" "$_arg_version" "parse_cli sets _arg_version for --version"
+
+reset_args
+parse_cli "-v" "3.0.0"
+assert_eq "3.0.0" "$_arg_version" "parse_cli sets _arg_version for -v"
+
+reset_args
+parse_cli "--img-size" "16G"
+assert_eq "16G" "$_arg_img_size" "parse_cli sets _arg_img_size for --img-size"
+
+reset_args
+parse_cli "-s" "8G"
+assert_eq "8G" "$_arg_img_size" "parse_cli sets _arg_img_size for -s"
+
+reset_args
+parse_cli "--hostname" "picluster"
+assert_eq "picluster" "$_arg_hostname" "parse_cli sets _arg_hostname for --hostname"
+
+reset_args
+parse_cli "--no-compress"
+assert_eq "1" "$_arg_no_compress" "parse_cli sets _arg_no_compress for --no-compress"
+
+# Test 3: Multiple combined flags
+reset_args
+parse_cli -y -v 1.2.3 -s 8G --hostname node01 --no-compress
+assert_eq "1" "$_arg_non_interactive" "combined flags: -y"
+assert_eq "1.2.3" "$_arg_version" "combined flags: -v"
+assert_eq "8G" "$_arg_img_size" "combined flags: -s"
+assert_eq "node01" "$_arg_hostname" "combined flags: --hostname"
+assert_eq "1" "$_arg_no_compress" "combined flags: --no-compress"
+
+# Test 4: Missing arguments
+for opt in "-o" "--output-dir" "-v" "--version" "-s" "--img-size" "--hostname"; do
     set +e
-    output="$("$BIN" "$opt" 2>&1)"
+    err_out="$(parse_cli "$opt" 2>&1)"
     code=$?
     set -e
-    assert_eq "1" "$code" "Missing argument for $opt returns exit code 1"
-    assert_contains "$output" "Missing argument for $opt" "Missing argument error for $opt"
+    assert_eq "1" "$code" "missing arg for $opt exits with 1"
+    assert_contains "$err_out" "Missing argument for $opt" "missing arg error message for $opt"
 done
 
-# Test 6: Running build without root fails at preflight
+# Test 5: Unknown flag
 set +e
-output="$("$BIN" 2>&1)"
+err_out="$(parse_cli "--unknown-flag" 2>&1)"
 code=$?
 set -e
-assert_eq "1" "$code" "Non-root build attempt exits with code 1"
-assert_contains "$output" "This script must be run as root" "Non-root error message"
+assert_eq "1" "$code" "unknown flag exits with 1"
+assert_contains "$err_out" "Unknown option: --unknown-flag" "unknown flag error message"
 
-# Test 7: --check diagnostics run without root and report status
+# Test 6: Help flags exit 0
 set +e
-output="$("$BIN" --check 2>&1)"
-code=$?
+help_out="$(parse_cli --help 2>&1)"
+help_code=$?
 set -e
-assert_contains "$output" "Host Environment Diagnostics" "--check header present"
-assert_contains "$output" "ALARM mirror reachable" "--check tests mirror connectivity"
+assert_eq "0" "$help_code" "parse_cli --help exits with 0"
+assert_contains "$help_out" "Usage: sudo" "--help prints usage"
 
-# Test 8: --no-gum flag functions correctly in check mode
 set +e
-output="$("$BIN" --check --no-gum 2>&1)"
-code=$?
+h_out="$(parse_cli -h 2>&1)"
+h_code=$?
 set -e
-assert_contains "$output" "Host Environment Diagnostics" "--no-gum check executes"
-assert_contains "$output" "UI library: gum" "--no-gum check displays UI info"
+assert_eq "0" "$h_code" "parse_cli -h exits with 0"
+assert_contains "$h_out" "Usage: sudo" "-h prints usage"
 
-# Test 9: --interactive without a terminal exits cleanly with message
-set +e
-output="$("$BIN" --interactive 2>&1)"
-code=$?
-set -e
-assert_eq "1" "$code" "--interactive without tty exits with code 1"
-assert_contains "$output" "requires an interactive terminal" "--interactive non-tty message"
-
-# Test 10: -y / --non-interactive flag bypasses wizard and proceeds to preflight
-set +e
-output="$("$BIN" -y 2>&1)"
-code=$?
-set -e
-assert_eq "1" "$code" "-y without root exits at preflight"
-assert_contains "$output" "This script must be run as root" "-y preflight message"
-
-# Test 11: Repository structure and modular architecture checks
-[[ -f "${SCRIPT_DIR}/README.md" ]] && assert_eq "0" "0" "README.md exists" || assert_eq "0" "1" "README.md exists"
-[[ -f "${SCRIPT_DIR}/LICENSE" ]] && assert_eq "0" "0" "LICENSE exists" || assert_eq "0" "1" "LICENSE exists"
-[[ -x "$BIN" ]] && assert_eq "0" "0" "build script is executable" || assert_eq "0" "1" "build script is executable"
-[[ -L "${SCRIPT_DIR}/build.sh" || -f "${SCRIPT_DIR}/build.sh" ]] && assert_eq "0" "0" "build.sh entry point exists" || assert_eq "0" "1" "build.sh entry point exists"
-
-for mod_name in ui.sh cleanup.sh cli.sh config.sh wizard.sh doctor.sh build.sh; do
-    [[ -f "${SCRIPT_DIR}/src/${mod_name}" ]] && assert_eq "0" "0" "src/${mod_name} exists" || assert_eq "0" "1" "src/${mod_name} exists"
-done
-
-# Test 12: Resource cleanup removes temporary files and directories
-(
-    # shellcheck source=src/ui.sh
-    source "${SCRIPT_DIR}/src/ui.sh"
-    # shellcheck source=src/cleanup.sh
-    source "${SCRIPT_DIR}/src/cleanup.sh"
-
-    test_conf="$(mktemp /tmp/pacman-aarch64.testXXXXXX.conf)"
-    test_rootfs="$(mktemp -d /tmp/alarm-rootfs.testXXXXXX)"
-
-    PACMAN_CONF="$test_conf"
-    ROOTFS="$test_rootfs"
-
-    # Execute cleanup
-    cleanup
-
-    [[ ! -f "$test_conf" ]] && assert_eq "0" "0" "cleanup removes PACMAN_CONF" || assert_eq "0" "1" "cleanup removes PACMAN_CONF"
-    [[ ! -d "$test_rootfs" ]] && assert_eq "0" "0" "cleanup removes ROOTFS mount directory" || assert_eq "0" "1" "cleanup removes ROOTFS mount directory"
-
-    # Test pre-run cleanup of orphaned files from earlier interrupted runs
-    stale_conf="$(mktemp /tmp/pacman-aarch64.staleXXXXXX.conf)"
-    stale_dir="$(mktemp -d /tmp/alarm-rootfs.staleXXXXXX)"
-
-    cleanup_previous_run
-
-    [[ ! -f "$stale_conf" ]] && assert_eq "0" "0" "cleanup_previous_run sweeps stale pacman confs" || assert_eq "0" "1" "cleanup_previous_run sweeps stale pacman confs"
-    [[ ! -d "$stale_dir" ]] && assert_eq "0" "0" "cleanup_previous_run sweeps stale rootfs dirs" || assert_eq "0" "1" "cleanup_previous_run sweeps stale rootfs dirs"
-)
-
-echo ""
-printf "Summary: %d passed, %d failed\n" "$PASSED" "$FAILED"
-
-if [[ $FAILED -gt 0 ]]; then
-    exit 1
-fi
+test_summary "src/cli.sh"

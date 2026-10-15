@@ -19,6 +19,7 @@ TIMEZONE="${TIMEZONE:-UTC}"
 LOCALE="${LOCALE:-en_US.UTF-8}"
 EXTRA_PACKAGES="${EXTRA_PACKAGES:-}"
 ALARM_MIRROR="${ALARM_MIRROR:-http://mirror.archlinuxarm.org}"
+CUSTOM_IMG_NAME="${IMG_NAME:-}"
 
 init_config() {
     IMG_SIZE="${_arg_img_size:-${IMG_SIZE:-4G}}"
@@ -28,11 +29,11 @@ init_config() {
     ALARM_USER="${ALARM_USER:-alarm}"
     ALARM_PASSWORD="${ALARM_PASSWORD:-alarm}"
 
-    local _output_dir="${_arg_output_dir:-${SCRIPT_DIR}/dist}"
+    local _output_dir="${_arg_output_dir:-${SCRIPT_DIR:-.}/dist}"
     _output_dir="$(mkdir -p -- "$_output_dir" && cd -- "$_output_dir" && pwd)"
     OUTPUT_DIR="$_output_dir"
 
-    if [[ -n "$_arg_no_compress" ]]; then
+    if [[ -n "${_arg_no_compress:-}" ]]; then
         COMPRESS=0
     else
         COMPRESS="${COMPRESS:-1}"
@@ -42,6 +43,6 @@ init_config() {
 }
 
 recompute_image_paths() {
-    IMG_NAME="${IMG_NAME:-alarm-rpi5-${VERSION}-${BUILD_DATE}}"
+    IMG_NAME="${CUSTOM_IMG_NAME:-alarm-rpi5-${VERSION}-${BUILD_DATE}}"
     IMG_FILE="${OUTPUT_DIR}/${IMG_NAME}.img"
 }

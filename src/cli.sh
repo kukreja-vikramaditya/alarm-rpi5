@@ -2,8 +2,11 @@
 # src/cli.sh — Command line interface, usage, and argument parsing
 
 usage() {
+    local script_name="${SCRIPT_NAME:-build-alarm-rpi5.sh}"
+    local script_dir="${SCRIPT_DIR:-.}"
+
     cat <<USAGE
-Usage: sudo ./${SCRIPT_NAME} [OPTIONS]
+Usage: sudo ./${script_name} [OPTIONS]
 
 Build an Arch Linux ARM image for Raspberry Pi 5.
 Runs in interactive wizard mode by default when attached to a terminal.
@@ -12,7 +15,7 @@ Options:
   -c, --check              Check host environment and dependencies without building
   -i, --interactive        Run interactive configuration wizard explicitly
   -y, --non-interactive    Bypass interactive prompts and use defaults/flags
-  -o, --output-dir DIR     Output directory       (default: ${SCRIPT_DIR}/dist)
+  -o, --output-dir DIR     Output directory       (default: ${script_dir}/dist)
   -v, --version VER        Image version string   (default: 0.1.0)
   -s, --img-size SIZE      Raw image size         (default: 4G)
       --hostname NAME      Target hostname        (default: raspberrypi)
@@ -26,11 +29,11 @@ Environment overrides (lower precedence than flags):
   EXTRA_PACKAGES, ALARM_MIRROR, COMPRESS
 
 Examples:
-  ./${SCRIPT_NAME} --check
-  sudo ./${SCRIPT_NAME}                  # interactive wizard by default
-  sudo ./${SCRIPT_NAME} -y               # build immediately with defaults
-  sudo ./${SCRIPT_NAME} -o /mnt/build -v 1.0.0
-  EXTRA_PACKAGES="git htop" sudo ./${SCRIPT_NAME}
+  ./${script_name} --check
+  sudo ./${script_name}                  # interactive wizard by default
+  sudo ./${script_name} -y               # build immediately with defaults
+  sudo ./${script_name} -o /mnt/build -v 1.0.0
+  EXTRA_PACKAGES="git htop" sudo ./${script_name}
 USAGE
 }
 
