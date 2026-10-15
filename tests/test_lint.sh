@@ -3,14 +3,15 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+SCRIPT_PATH="$(realpath -- "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname -- "${SCRIPT_PATH}")"
 # shellcheck source=tests/test_helper.sh
 source "${SCRIPT_DIR}/test_helper.sh"
 
 echo "=== Unit Tests: Shell Linting & Formatting ==="
 
 TARGET_SCRIPTS=(
-    "${SCRIPT_DIR}/build-alarm-rpi5.sh"
+    "${SCRIPT_DIR}/build.sh"
     "${SCRIPT_DIR}/docker-build.sh"
     "${SRC_DIR}/"*.sh
     "${SCRIPT_DIR}/tests/"*.sh

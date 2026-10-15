@@ -2,54 +2,39 @@
 # tests/test_entrypoint.sh — Unit & integration tests for root entry points
 set -euo pipefail
 
-TEST_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+TEST_PATH="$(realpath -- "${BASH_SOURCE[0]}")"
+TEST_DIR="$(dirname -- "${TEST_PATH}")"
 # shellcheck source=tests/test_helper.sh
 source "${TEST_DIR}/test_helper.sh"
 
-BIN="${SCRIPT_DIR}/build-alarm-rpi5.sh"
-ALIAS="${SCRIPT_DIR}/build.sh"
+BIN="${SCRIPT_DIR}/build.sh"
 
-echo "=== Unit Tests: Root Entry Point (build-alarm-rpi5.sh & build.sh) ==="
+echo "=== Unit Tests: Root Entry Point (build.sh) ==="
 
 # Test 1: Bash syntax validation
 if bash -n "$BIN"; then
-    assert_eq "0" "0" "build-alarm-rpi5.sh syntax validation (bash -n)"
-else
-    assert_eq "0" "1" "build-alarm-rpi5.sh syntax validation (bash -n)"
-fi
-
-if bash -n "$ALIAS"; then
     assert_eq "0" "0" "build.sh syntax validation (bash -n)"
 else
     assert_eq "0" "1" "build.sh syntax validation (bash -n)"
 fi
 
-# Test 2: File permissions and symlink
-assert_file_exists "$BIN" "build-alarm-rpi5.sh exists"
+# Test 2: File permissions
+assert_file_exists "$BIN" "build.sh exists"
 if [[ -x "$BIN" ]]; then
-    assert_eq "0" "0" "build-alarm-rpi5.sh is executable"
+    assert_eq "0" "0" "build.sh is executable"
 else
-    assert_eq "0" "1" "build-alarm-rpi5.sh is executable"
-fi
-assert_file_exists "$ALIAS" "build.sh exists"
-if [[ -L "$ALIAS" ]]; then
-    assert_eq "0" "0" "build.sh is a symlink"
-else
-    assert_eq "0" "1" "build.sh is a symlink"
+    assert_eq "0" "1" "build.sh is executable"
 fi
 
 # Test 3: --help and -h flags
 out="$("$BIN" --help 2>&1 || true)"
-assert_contains "$out" "Usage: sudo ./build-alarm-rpi5.sh" "Flag --help displays usage"
+assert_contains "$out" "Usage: sudo ./build.sh" "Flag --help displays usage"
 assert_contains "$out" "--check" "Flag --help lists --check"
 assert_contains "$out" "--interactive" "Flag --help lists --interactive"
 assert_contains "$out" "--non-interactive" "Flag --help lists --non-interactive"
 
-out_alias="$("$ALIAS" --help 2>&1 || true)"
-assert_contains "$out_alias" "Usage: sudo" "build.sh alias --help functions"
-
 out_h="$("$BIN" -h 2>&1 || true)"
-assert_contains "$out_h" "Usage: sudo ./build-alarm-rpi5.sh" "Flag -h displays usage"
+assert_contains "$out_h" "Usage: sudo ./build.sh" "Flag -h displays usage"
 
 # Test 4: Unknown flags exit 1
 set +e
@@ -101,15 +86,7 @@ set -e
 assert_contains "$out" "Host Environment Diagnostics" "--check header present"
 assert_contains "$out" "ALARM mirror reachable" "--check tests mirror connectivity"
 
-# Test 10: --no-gum flag with --check
-set +e
-out="$("$BIN" --check --no-gum 2>&1)"
-code=$?
-set -e
-assert_contains "$out" "Host Environment Diagnostics" "--no-gum check executes"
-assert_contains "$out" "UI library: gum" "--no-gum check displays UI info"
-
-# Test 11: Docker entrypoints
+# Test 10: Docker entrypoints
 assert_file_exists "${SCRIPT_DIR}/Dockerfile" "Dockerfile exists"
 assert_file_exists "${SCRIPT_DIR}/docker-build.sh" "docker-build.sh exists"
 if [[ -x "${SCRIPT_DIR}/docker-build.sh" ]]; then

@@ -2,7 +2,8 @@
 # tests/test_doctor.sh — Unit tests for src/doctor.sh
 set -euo pipefail
 
-TEST_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+TEST_PATH="$(realpath -- "${BASH_SOURCE[0]}")"
+TEST_DIR="$(dirname -- "${TEST_PATH}")"
 # shellcheck source=tests/test_helper.sh
 source "${TEST_DIR}/test_helper.sh"
 

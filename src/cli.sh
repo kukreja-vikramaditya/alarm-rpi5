@@ -3,7 +3,7 @@
 # src/cli.sh — Command line interface, usage, and argument parsing
 
 usage() {
-    local script_name="${SCRIPT_NAME:-build-alarm-rpi5.sh}"
+    local script_name="${SCRIPT_NAME:-build.sh}"
     local script_dir="${SCRIPT_DIR:-.}"
 
     cat <<USAGE
@@ -26,7 +26,6 @@ Options:
       --root-user USER     Root username          (default: root)
       --root-password PASS Root password          (default: root)
       --no-compress        Skip xz compression
-      --no-gum             Disable Gum styling and interactive elements
   -h, --help               Show this help
 
 Environment overrides (lower precedence than flags):
@@ -71,10 +70,6 @@ parse_cli() {
                 ;;
             -y | --non-interactive | --batch)
                 _arg_non_interactive=1
-                shift
-                ;;
-            --no-gum)
-                USE_GUM=0
                 shift
                 ;;
             -o | --output-dir)

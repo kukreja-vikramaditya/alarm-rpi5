@@ -12,11 +12,7 @@ A compressed raw disk image:
 dist/alarm-rpi5-0.1.0-20261015.img.xz
 ```
 
-Flash it with RPi Imager → **"Use custom"**, or with `dd`:
-
-```bash
-xzcat dist/alarm-rpi5-*.img.xz | sudo dd of=/dev/sdX bs=4M status=progress
-```
+Flash it with Raspberry Pi Imager → **"Use custom"**.
 
 ## Default Usernames & Passwords
 
@@ -29,7 +25,7 @@ The built image is pre-configured with default credentials and passwordless `sud
 
 > [!TIP]
 > **Customizing Credentials During Build:**
-> - **Interactive Wizard:** Run `./docker-build.sh` or `sudo ./build-alarm-rpi5.sh` without `-y` to customize usernames and passwords interactively.
+> - **Interactive Wizard:** Run `./docker-build.sh` or `sudo ./build.sh` without `-y` to customize usernames and passwords interactively.
 > - **Environment Variables:** Set `ALARM_USER`, `ALARM_PASSWORD`, `ROOT_USER`, and `ROOT_PASSWORD` (e.g., `ALARM_USER=myuser ALARM_PASSWORD=mypass ./docker-build.sh -y`).
 
 > [!IMPORTANT]
@@ -72,7 +68,7 @@ Or pass custom flags:
 ### Method 2: Native Host Build
 
 ```bash
-sudo ./build-alarm-rpi5.sh
+sudo ./build.sh
 ```
 
 Output lands in `dist/`. That's it.
@@ -86,8 +82,8 @@ alarm-rpi5/
 ├── Dockerfile               # Container definition for isolated builds
 ├── docker-build.sh          # One-command Docker build launcher
 ├── .dockerignore            # Docker build context exclusions
-├── build-alarm-rpi5.sh      # Primary root entry point
-├── build.sh                 # Convenience alias symlink
+├── build.sh                 # Primary root entry point
+├── alarm.conf               # Declarative build configuration overrides
 ├── data/                    # Configuration templates and static files deployed to rootfs
 │   ├── 20-wired.network     # Wired Ethernet DHCP configuration (systemd-networkd)
 │   ├── alarm-expand-root.service # One-shot systemd service to expand partition on first boot
@@ -130,7 +126,7 @@ alarm-rpi5/
 ## Usage
 
 ```
-sudo ./build-alarm-rpi5.sh [OPTIONS]
+sudo ./build.sh [OPTIONS]
 
 Options:
   -c, --check              Check host environment and dependencies without building
@@ -146,7 +142,6 @@ Options:
       --root-user USER     Root username          (default: root)
       --root-password PASS Root password          (default: root)
       --no-compress        Skip xz compression
-      --no-gum             Disable Gum styling and interactive elements
   -h, --help               Show help
 ```
 
@@ -154,26 +149,26 @@ Options:
 
 ```bash
 # Check if host environment has required tools & setup
-./build-alarm-rpi5.sh --check
+./build.sh --check
 
 # Default build (launches interactive wizard automatically on terminal)
-sudo ./build-alarm-rpi5.sh
+sudo ./build.sh
 
 # Non-interactive / unattended build (uses defaults or flags immediately)
-sudo ./build-alarm-rpi5.sh -y
+sudo ./build.sh -y
 
 # Custom version and output
-sudo ./build-alarm-rpi5.sh -v 1.0.0 -o /mnt/images
+sudo ./build.sh -v 1.0.0 -o /mnt/images
 
 # Larger image with extra packages
-IMG_SIZE=8G EXTRA_PACKAGES="git htop vim" sudo ./build-alarm-rpi5.sh
+IMG_SIZE=8G EXTRA_PACKAGES="git htop vim" sudo ./build.sh
 
 # Skip compression for faster iteration
-sudo ./build-alarm-rpi5.sh --no-compress
+sudo ./build.sh --no-compress
 
 # Override hostname, timezone, and user credentials
 TARGET_HOSTNAME=mypi TIMEZONE=Asia/Kolkata ALARM_USER=vikram ALARM_PASSWORD=secret \
-  sudo ./build-alarm-rpi5.sh
+  sudo ./build.sh
 ```
 
 ## Configuration & Environment Variables
@@ -182,12 +177,7 @@ All settings have sensible defaults. Precedence order: **CLI Flags > `alarm.conf
 
 ### Configuration File (`alarm.conf`)
 
-You can configure all options declaratively in an `alarm.conf` file:
-
-```bash
-cp alarm.conf.example alarm.conf
-nano alarm.conf
-```
+You can configure all options declaratively directly in `alarm.conf`.
 
 ### Supported Settings
 
@@ -204,33 +194,20 @@ nano alarm.conf
 | `ALARM_PASSWORD` | `alarm` | Non-root user password |
 | `TIMEZONE` | `Asia/Kolkata` | System timezone |
 | `LOCALE` | `en_US.UTF-8` | System locale |
-| `EXTRA_PACKAGES` | *(empty)* | Space-separated list of extra pacman packages |
+| `EXTRA_PACKAGES` | `git curl wget vim neovim tmux zsh` | Space-separated list of extra pacman packages |
 | `ALARM_MIRROR` | `http://mirror.archlinuxarm.org` | ALARM mirror URL |
 | `COMPRESS` | `1` | Set to `0` to skip xz compression |
 
-
 ## Flashing
 
-### Raspberry Pi Imager (recommended)
-
-1. Open Raspberry Pi Imager
+1. Open **[Raspberry Pi Imager](https://www.raspberrypi.com/software/)**
 2. **Choose OS** → scroll to bottom → **Use custom**
 3. Select `dist/alarm-rpi5-*.img.xz`
 4. **Choose Storage** → select your SD card
 5. **Write**
 
-> **Note:** The OS Customization dialog (Wi-Fi, SSH, hostname) is disabled for custom images. SSH and `systemd-networkd` wired DHCP are pre-enabled in the image; connect via Ethernet on first boot.
-
-### dd
-
-```bash
-xzcat dist/alarm-rpi5-0.1.0-20261015.img.xz | sudo dd of=/dev/sdX bs=4M status=progress
-sync
-```
-
-### NVMe
-
-The Pi 5 supports NVMe boot natively. Flash to your NVMe drive instead of SD, and edit `fstab` + `cmdline.txt` on the boot partition to replace `mmcblk0p*` with `nvme0n1p*`.
+> [!NOTE]
+> The OS Customization dialog (Wi-Fi, SSH, hostname) is disabled for custom images. SSH and `systemd-networkd` wired DHCP are pre-enabled in the image; connect via Ethernet on first boot.
 
 ## First boot
 
@@ -279,135 +256,6 @@ Or pass the target desktop directly for a completely non-interactive installatio
 sudo install-ui xfce      # Installs XFCE + LightDM + GPU drivers & reboots into GUI
 sudo install-ui kde       # Installs KDE Plasma + SDDM on Wayland
 sudo install-ui gnome     # Installs GNOME + GDM on Wayland
-```
-
----
-
-### Manual Installation & Architecture Breakdown
-
-If you prefer installing components manually, or want to understand the role of each package:
-
-| Layer | Component | What It Does | Example |
-| :--- | :--- | :--- | :--- |
-| **Graphics Driver** | DRM / Mesa | Translates OpenGL/Vulkan graphics commands directly into hardware instructions for the Pi 5 VideoCore VII GPU. | `mesa`, `libdrm` |
-| **Display Server / Protocol** | Wayland or X11 | The communication protocol that manages windows, screen buffers, mouse clicks, and keystrokes. | Wayland (native on Pi 5) or `xorg-server` |
-| **Display Manager (DM)** | System Service | The background daemon that starts on boot and handles user authentication and session startup. Without this, you only get a text terminal login prompt (`login:`). | `lightdm`, `sddm`, `gdm` |
-| **Greeter** | Login Screen UI | The visual login screen box (rendered by the Display Manager) where you type your username/password and choose your desktop session. | `lightdm-gtk-greeter` |
-| **Desktop Environment (DE)** | Full Interface | The user-facing software suite: taskbar, app launcher, window borders, wallpaper, file manager, and system settings. | `xfce4`, `plasma-desktop`, `gnome` |
-
----
-
-### Step 1: Install Core GPU Drivers, Fonts & Audio
-
-```bash
-sudo pacman -Syu --needed --noconfirm \
-  mesa libdrm \
-  ttf-dejavu ttf-liberation noto-fonts \
-  pipewire pipewire-pulse wireplumber
-```
-
-#### What each package does:
-* **`mesa`**: The open-source 3D graphics library. Provides the `v3d` driver that enables hardware OpenGL and Vulkan acceleration on the Raspberry Pi 5's VideoCore VII GPU. Without Mesa, window rendering falls back to slow software emulation on the CPU.
-* **`libdrm`**: Direct Rendering Manager library. A low-level userspace library that lets programs talk directly to the Linux kernel graphics subsystem to allocate display buffers and manage video modes.
-* **`ttf-dejavu`, `ttf-liberation`, `noto-fonts`**: High-quality TrueType fonts covering Latin and international character sets. Without fonts installed, web browsers and UI apps render blank boxes ("tofu") instead of text.
-* **`pipewire`**: Modern, low-latency multimedia routing framework that handles sound playback and microphone input.
-* **`pipewire-pulse`**: Drop-in PulseAudio compatibility layer that allows standard audio applications (browsers, Spotify, media players) to play sound through PipeWire seamlessly.
-* **`wireplumber`**: The modular session manager for PipeWire that dynamically switches between audio devices (e.g., HDMI audio, 3.5mm, USB headsets, or Bluetooth).
-
----
-
-### Step 2: Choose and Install a Desktop Environment
-
-#### Option A: XFCE (Lightweight & Stable — Recommended)
-Extremely fast, minimal RAM footprint (~300MB idle), and rock-solid:
-
-```bash
-# 1. Remove legacy fbdev driver to prevent "Cannot run in framebuffer mode" error
-sudo pacman -Rdd --noconfirm xf86-video-fbdev 2>/dev/null || true
-
-# 2. Install XFCE, LightDM greeter, and Xorg
-sudo pacman -S --needed --noconfirm \
-  xfce4 xfce4-goodies \
-  lightdm lightdm-gtk-greeter \
-  xorg-server xorg-xinit
-
-# 3. Configure Xorg to bind the Pi 5 vc4 KMS driver as primary GPU
-sudo mkdir -p /etc/X11/xorg.conf.d
-sudo rm -f /etc/X11/xorg.conf.d/20-modesetting.conf
-cat <<'EOF' | sudo tee /etc/X11/xorg.conf.d/99-vc4.conf
-Section "OutputClass"
-    Identifier "vc4"
-    MatchDriver "vc4"
-    Driver "modesetting"
-    Option "PrimaryGPU" "true"
-EndSection
-EOF
-
-# 4. Configure LightDM to use lightdm-gtk-greeter
-sudo sed -i 's/^#*greeter-session=.*/greeter-session=lightdm-gtk-greeter/' /etc/lightdm/lightdm.conf
-
-# 5. Enable and start LightDM
-sudo systemctl enable lightdm.service
-sudo reboot
-```
-
-* **`xfce4`**: The core desktop environment meta-package containing the window manager (`xfwm4`), desktop background/icon manager (`xfdesktop`), application launcher panel (`xfce4-panel`), and session coordinator.
-* **`xfce4-goodies`**: Useful companion plugins and utilities (task manager, battery monitor, screenshot utility, text editor, and image viewer).
-* **`lightdm`**: **Light Display Manager**. A fast, lightweight background service that starts the graphical environment at boot and coordinates user logins.
-* **`lightdm-gtk-greeter`**: The visual GTK-based login screen UI rendered by LightDM where you enter your username and password.
-* **`xorg-server`**: The traditional X11 display server required by X11-based desktops like XFCE.
-* **`xorg-xinit`**: Utility for launching and configuring manual X11 sessions (provides `startx`).
-* **`99-vc4.conf`**: Directs Xorg to bind the Raspberry Pi 5 `vc4` kernel DRM driver to the native `modesetting` DDX driver with hardware Glamor acceleration, preventing the fatal multi-device framebuffer busID crash.
-
----
-
-#### Option B: KDE Plasma (Modern, Hardware-Accelerated Wayland)
-Feature-rich, highly customizable desktop that runs natively on Wayland with full hardware acceleration on the Pi 5:
-
-```bash
-sudo pacman -S --needed --noconfirm \
-  plasma-desktop plasma-wayland-session plasma-workspace \
-  konsole dolphin sddm
-
-sudo systemctl enable sddm.service
-sudo reboot
-```
-
-* **`plasma-desktop`**: The core KDE Plasma desktop shell (desktop canvas, taskbar panel, system tray, and desktop widgets).
-* **`plasma-wayland-session`**: Enables Plasma to run on **Wayland** (the modern, tearing-free display protocol) taking direct advantage of the Pi 5's `v3d` GPU driver.
-* **`plasma-workspace`**: Supporting desktop services (lock screen, notification server, window switcher, and clipboard manager).
-* **`konsole`**: KDE's feature-packed terminal emulator.
-* **`dolphin`**: KDE's graphical file manager.
-* **`sddm`**: **Simple Desktop Display Manager**. The default display and login manager developed for modern KDE Plasma and Wayland sessions.
-
----
-
-#### Option C: GNOME (Polished & Touch-Friendly Wayland Desktop)
-A clean, tablet/touch-friendly desktop environment:
-
-```bash
-sudo pacman -S --needed --noconfirm gnome gdm
-
-sudo systemctl enable gdm.service
-sudo reboot
-```
-
-* **`gnome`**: Meta-package containing GNOME Shell, the Mutter compositor/window manager, Nautilus file manager, GNOME Settings, and core apps.
-* **`gdm`**: **GNOME Display Manager**. The native login and lock screen manager for GNOME with built-in Wayland support.
-
----
-
-### Step 3: Verify Hardware Acceleration
-After logging into your desktop environment, open a terminal and verify that the Broadcom VideoCore VII GPU is actively rendering graphics:
-
-```bash
-glxinfo | grep -E "(OpenGL renderer|OpenGL vendor)"
-```
-
-Expected output:
-```text
-OpenGL vendor string: Broadcom
-OpenGL renderer string: V3D 7.1
 ```
 
 ## What's inside
@@ -464,30 +312,6 @@ Pi 5 EEPROM → start4.elf → config.txt → linux-rpi kernel → systemd
 
 ¹ The VideoCore GPU firmware blobs are proprietary Broadcom binaries. **Every** OS that boots on real Pi hardware uses them — there is no open-source alternative. This is a hardware requirement, not a software choice.
 
-## Optional: build the kernel from source
-
-If you want to compile `linux-rpi` yourself instead of using the ALARM binary:
-
-```bash
-# Clone ALARM's PKGBUILDs
-git clone https://github.com/archlinuxarm/PKGBUILDs.git
-cd PKGBUILDs/core/linux-rpi
-
-# Build (native on Pi 5: ~60-90 min; under qemu: longer)
-makepkg -s
-
-# The PKGBUILD uses bcm2712_defconfig for Pi 5
-# Output: linux-rpi-*.pkg.tar.zst
-```
-
-Or build directly from the RPi Foundation kernel tree:
-
-```bash
-git clone --depth=1 https://github.com/raspberrypi/linux.git -b rpi-6.6.y
-cd linux
-make ARCH=arm64 bcm2712_defconfig
-make ARCH=arm64 -j$(nproc) Image modules dtbs
-```
 
 ## Testing
 
@@ -509,13 +333,13 @@ Or run test suites for individual components directly:
 ./tests/test_wizard.sh      # src/wizard.sh (interactive wizards, tty guards)
 ./tests/test_doctor.sh      # src/doctor.sh (environment diagnostics, package map)
 ./tests/test_build.sh       # src/build.sh (boot configs, partition math, pacman)
-./tests/test_entrypoint.sh  # build-alarm-rpi5.sh & build.sh
+./tests/test_entrypoint.sh  # build.sh root entry point
 ```
 
 To run diagnostic checks on your host system without building:
 
 ```bash
-./build-alarm-rpi5.sh --check
+./build.sh --check
 ```
 
 ## Continuous Integration & Automated Releases

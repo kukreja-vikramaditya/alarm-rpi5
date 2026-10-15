@@ -2,7 +2,9 @@
 # shellcheck disable=SC2034 # SRC_DIR and test stats are shared with test suites
 # tests/test_helper.sh — Shared test assertion helpers and reporting
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." &>/dev/null && pwd)"
+TEST_HELPER_PATH="$(realpath -- "${BASH_SOURCE[0]}")"
+TESTS_DIR="$(dirname -- "${TEST_HELPER_PATH}")"
+SCRIPT_DIR="$(dirname -- "${TESTS_DIR}")"
 readonly SCRIPT_DIR
 readonly SRC_DIR="${SCRIPT_DIR}/src"
 readonly DATA_DIR="${SCRIPT_DIR}/data"

@@ -2,7 +2,8 @@
 # tests/run_all.sh — Master test runner for all unit and integration test suites
 set -euo pipefail
 
-TEST_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+TEST_PATH="$(realpath -- "${BASH_SOURCE[0]}")"
+TEST_DIR="$(dirname -- "${TEST_PATH}")"
 
 TOTAL_SUITES=0
 PASSED_SUITES=0
@@ -23,7 +24,7 @@ SUITES=(
     "test_wizard.sh"     # src/wizard.sh
     "test_doctor.sh"     # src/doctor.sh
     "test_build.sh"      # src/build.sh
-    "test_entrypoint.sh" # build-alarm-rpi5.sh & build.sh
+    "test_entrypoint.sh" # build.sh root entry point
 )
 
 for suite in "${SUITES[@]}"; do

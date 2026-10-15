@@ -75,28 +75,12 @@ check_environment() {
         ((issues++)) || true
     fi
 
-    # 7. UI enhancement
-    if [[ -n "${GUM_BIN:-}" ]]; then
-        printf '  %-32s %s (%s)\n' "UI library: gum" "$(format_badge OK)" "${GUM_BIN}"
-    else
-        printf '  %-32s %s (optional for enhanced UI: pacman -S gum or see charm.sh/gum)\n' \
-            "UI library: gum" "$(format_badge INFO)"
-    fi
-
     echo ""
     if [[ $issues -eq 0 ]]; then
-        if [[ "${USE_GUM:-0}" -eq 1 ]]; then
-            "$GUM_BIN" style --foreground 42 --bold "✔ All prerequisites satisfied! Ready to build."
-        else
-            echo "All prerequisites satisfied! Ready to build."
-        fi
+        "$GUM_BIN" style --foreground 42 --bold "✔ All prerequisites satisfied! Ready to build."
         return 0
     else
-        if [[ "${USE_GUM:-0}" -eq 1 ]]; then
-            "$GUM_BIN" style --foreground 214 --bold "⚠ ${issues} prerequisite(s) missing. Install missing packages before running the build."
-        else
-            echo "⚠ ${issues} prerequisite(s) missing. Install missing packages before running the build."
-        fi
+        "$GUM_BIN" style --foreground 214 --bold "⚠ ${issues} prerequisite(s) missing. Install missing packages before running the build."
         return 1
     fi
 }

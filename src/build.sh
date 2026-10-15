@@ -130,7 +130,10 @@ bootstrap_rootfs() {
     if [[ -n "${EXTRA_PACKAGES}" ]]; then
         local -a extras
         IFS=' ' read -ra extras <<<"${EXTRA_PACKAGES}"
-        packages+=("${extras[@]}")
+        for pkg in "${extras[@]}"; do
+            [[ "$pkg" == "nvim" ]] && pkg="neovim"
+            packages+=("${pkg}")
+        done
     fi
 
     log_info "Installing packages: ${packages[*]}"
@@ -291,7 +294,7 @@ finalize_image() {
         final_file="${IMG_FILE}"
     fi
 
-    # shellcheck disable=SC2034 # Global variable read by build-alarm-rpi5.sh entrypoint
+    # shellcheck disable=SC2034 # Global variable read by build.sh entrypoint
     FINAL_BUILT_FILE="${final_file}"
 
     # Ensure output files are accessible to host users

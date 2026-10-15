@@ -19,6 +19,7 @@ RUN sed -i 's/^#DisableSandbox/DisableSandbox/' /etc/pacman.conf || true && \
         util-linux \
         coreutils \
         curl \
+        gum \
         qemu-user-static \
         qemu-user-static-binfmt && \
     rm -rf /var/cache/pacman/pkg/*
@@ -28,5 +29,5 @@ WORKDIR /workspace
 # Copy codebase
 COPY . /workspace
 
-ENTRYPOINT ["./build-alarm-rpi5.sh"]
+ENTRYPOINT ["./build.sh"]
 CMD ["-y"]

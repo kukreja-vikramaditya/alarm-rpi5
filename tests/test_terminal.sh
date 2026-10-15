@@ -2,7 +2,8 @@
 # tests/test_terminal.sh — Unit tests for src/terminal.sh
 set -euo pipefail
 
-TEST_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+TEST_PATH="$(realpath -- "${BASH_SOURCE[0]}")"
+TEST_DIR="$(dirname -- "${TEST_PATH}")"
 # shellcheck source=tests/test_helper.sh
 source "${TEST_DIR}/test_helper.sh"
 
@@ -39,16 +40,9 @@ assert_contains "$badge_custom" "CUSTOM" "format_badge fallback formats correctl
 spin_out="$(run_spin "Running echo test" echo "spin_success")"
 assert_contains "$spin_out" "spin_success" "run_spin executes passed command"
 
-# Test 3: find_gum_binary returns path or fails cleanly
-set +e
-gum_path="$(find_gum_binary 2>/dev/null)"
-gum_code=$?
-set -e
-if [[ $gum_code -eq 0 ]]; then
-    assert_contains "$gum_path" "gum" "find_gum_binary returns path containing gum"
-else
-    assert_eq "1" "$gum_code" "find_gum_binary returns 1 when gum not found"
-fi
+# Test 3: gum binary is available on PATH
+command -v "$GUM_BIN" >/dev/null 2>&1
+assert_eq "0" "$?" "gum command is available on PATH"
 
 # Test 4: GUM_INITIALIZED flag is set
 assert_eq "1" "${GUM_INITIALIZED:-0}" "GUM_INITIALIZED flag is set"

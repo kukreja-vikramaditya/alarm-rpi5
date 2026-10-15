@@ -6,7 +6,7 @@
 readonly REQUIRED_CMDS=(
     parted mkfs.vfat mkfs.ext4 losetup
     pacstrap arch-chroot truncate
-    xz numfmt
+    xz numfmt gum
 )
 
 # File creation mask: standard permissions (0755 dirs, 0644 files)
@@ -17,7 +17,7 @@ BUILD_DATE="$(date +%Y%m%d)"
 BOOT_SIZE_MIB="${BOOT_SIZE_MIB:-256}"
 TIMEZONE="${TIMEZONE:-Asia/Kolkata}"
 LOCALE="${LOCALE:-en_US.UTF-8}"
-EXTRA_PACKAGES="${EXTRA_PACKAGES:-}"
+EXTRA_PACKAGES="${EXTRA_PACKAGES:-git curl wget vim neovim tmux zsh}"
 ALARM_MIRROR="${ALARM_MIRROR:-http://mirror.archlinuxarm.org}"
 CUSTOM_IMG_NAME="${IMG_NAME:-}"
 if [[ -z "${DATA_DIR:-}" ]]; then

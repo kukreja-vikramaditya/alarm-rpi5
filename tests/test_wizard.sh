@@ -2,7 +2,8 @@
 # tests/test_wizard.sh — Unit tests for src/wizard.sh
 set -euo pipefail
 
-TEST_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+TEST_PATH="$(realpath -- "${BASH_SOURCE[0]}")"
+TEST_DIR="$(dirname -- "${TEST_PATH}")"
 # shellcheck source=tests/test_helper.sh
 source "${TEST_DIR}/test_helper.sh"
 
@@ -46,7 +47,6 @@ assert_contains "$err_out" "Interactive mode requires an interactive terminal" "
 _arg_interactive=""
 
 # Test 3: interactive_wizard_bash processes inputs properly
-USE_GUM=0
 VERSION="0.1.0"
 TARGET_HOSTNAME="raspberrypi"
 ROOT_USER="root"
@@ -78,7 +78,6 @@ assert_eq "8G" "$IMG_SIZE" "wizard updates IMG_SIZE"
 assert_eq "1" "$COMPRESS" "wizard sets COMPRESS to 1 on 'y'"
 
 # Test 4: interactive_wizard_bash handles compression disabled
-USE_GUM=0
 COMPRESS=1
 interactive_wizard_bash <<EOF >/dev/null
 

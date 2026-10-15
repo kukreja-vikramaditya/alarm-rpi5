@@ -39,7 +39,18 @@ TARGET_DE="$(echo "$TARGET_DE" | tr '[:upper:]' '[:lower:]')"
 
 echo ""
 echo "==> Step 1/3: Installing GPU acceleration drivers, fonts, and audio..."
+
+# 1. Remove legacy fbdev driver:
+# On Raspberry Pi 5 with vc4 KMS, xf86-video-fbdev tries to take over the display
+# in legacy framebuffer mode, causing Xorg to crash with "Cannot run in framebuffer mode".
+# Removing it forces Xorg to use the native kernel modesetting driver.
 pacman -Rdd --noconfirm xf86-video-fbdev 2>/dev/null || true
+
+# 2. Core graphics, fonts, and audio:
+# - mesa: Hardware 3D OpenGL & Vulkan acceleration via Broadcom VideoCore VII (V3D 7.1)
+# - libdrm: Direct Rendering Manager userspace library to communicate with Linux kernel DRM
+# - ttf-*: Essential TrueType fonts to avoid missing glyphs ("tofu" boxes) in UI and browsers
+# - pipewire & wireplumber: Low-latency audio server and modern session manager
 pacman -Syu --needed --noconfirm \
     mesa libdrm \
     ttf-dejavu ttf-liberation noto-fonts \
@@ -49,23 +60,32 @@ echo ""
 case "$TARGET_DE" in
     xfce)
         echo "==> Step 2/3: Installing XFCE Desktop and LightDM display manager..."
+        # - xfce4 & xfce4-goodies: Lightweight GTK desktop environment, panel, and companion plugins
+        # - lightdm: Fast, lightweight background display manager daemon
+        # - lightdm-gtk-greeter: Visual login screen GUI where credentials and session are entered
+        # - xorg-server & xorg-xinit: X11 display server required for XFCE
         pacman -S --needed --noconfirm \
             xfce4 xfce4-goodies \
             lightdm lightdm-gtk-greeter \
             xorg-server xorg-xinit
 
-        # Configure LightDM to use lightdm-gtk-greeter via drop-in and fix any typos
+        # Configure LightDM:
+        # Use a systemd drop-in file (/etc/lightdm/lightdm.conf.d/) to cleanly specify the greeter
+        # session without modifying or risking syntax errors in the upstream lightdm.conf file.
         mkdir -p /etc/lightdm/lightdm.conf.d
         cat > /etc/lightdm/lightdm.conf.d/60-lightdm-gtk-greeter.conf <<'GREETER'
 [Seat:*]
 greeter-session=lightdm-gtk-greeter
 GREETER
+        # Fix any legacy or malformed greeter lines in /etc/lightdm/lightdm.conf if present
         if [[ -f /etc/lightdm/lightdm.conf ]]; then
             sed -i 's/greeter-session-lightdm-gtk-greeter/greeter-session=lightdm-gtk-greeter/' /etc/lightdm/lightdm.conf
             sed -i 's/^#*greeter-session=.*/greeter-session=lightdm-gtk-greeter/' /etc/lightdm/lightdm.conf
         fi
 
-        # Ensure Xorg uses native modesetting KMS driver with vc4
+        # Configure Xorg KMS driver for Raspberry Pi 5:
+        # Binds the vc4 kernel DRM driver to the generic "modesetting" DDX driver with hardware
+        # Glamor 2D/3D acceleration, marking it as PrimaryGPU to prevent multi-device busID errors.
         mkdir -p /etc/X11/xorg.conf.d
         rm -f /etc/X11/xorg.conf.d/20-modesetting.conf
         cat > /etc/X11/xorg.conf.d/99-vc4.conf <<'XORG'
@@ -82,6 +102,9 @@ XORG
         ;;
     kde|plasma)
         echo "==> Step 2/3: Installing KDE Plasma and SDDM display manager..."
+        # - plasma-desktop & plasma-workspace: Full modern KDE desktop shell and services
+        # - plasma-wayland-session: Hardware-accelerated tearing-free Wayland session
+        # - sddm: Simple Desktop Display Manager (default login manager for KDE Plasma)
         pacman -S --needed --noconfirm \
             plasma-desktop plasma-wayland-session plasma-workspace \
             konsole dolphin sddm
@@ -90,6 +113,8 @@ XORG
         ;;
     gnome)
         echo "==> Step 2/3: Installing GNOME Desktop and GDM display manager..."
+        # - gnome: Complete GNOME Shell desktop environment running natively on Wayland
+        # - gdm: GNOME Display Manager with built-in Wayland session handling
         pacman -S --needed --noconfirm gnome gdm
         echo "==> Step 3/3: Enabling GDM login manager service..."
         systemctl enable gdm.service

@@ -2,7 +2,8 @@
 # tests/test_config.sh — Unit tests for src/config.sh
 set -euo pipefail
 
-TEST_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+TEST_PATH="$(realpath -- "${BASH_SOURCE[0]}")"
+TEST_DIR="$(dirname -- "${TEST_PATH}")"
 # shellcheck source=tests/test_helper.sh
 source "${TEST_DIR}/test_helper.sh"
 
@@ -24,8 +25,8 @@ source "${SRC_DIR}/logger.sh"
 source "${SRC_DIR}/config.sh"
 
 # Test 1: REQUIRED_CMDS array
-assert_eq "9" "${#REQUIRED_CMDS[@]}" "REQUIRED_CMDS has 9 items"
-for req in parted mkfs.vfat mkfs.ext4 losetup pacstrap arch-chroot truncate xz numfmt; do
+assert_eq "10" "${#REQUIRED_CMDS[@]}" "REQUIRED_CMDS has 10 items"
+for req in parted mkfs.vfat mkfs.ext4 losetup pacstrap arch-chroot truncate xz numfmt gum; do
     found=0
     for c in "${REQUIRED_CMDS[@]}"; do
         [[ "$c" == "$req" ]] && {

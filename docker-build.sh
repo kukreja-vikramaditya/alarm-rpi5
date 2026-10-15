@@ -4,7 +4,8 @@
 # ==============================================================================
 set -euo pipefail
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_PATH="$(realpath -- "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname -- "${SCRIPT_PATH}")"
 IMAGE_TAG="alarm-rpi5-builder:latest"
 
 # Check docker availability

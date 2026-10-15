@@ -19,5 +19,3 @@ dist/
 Thumbs.db
 
 # Local configuration overrides
-alarm.conf
-

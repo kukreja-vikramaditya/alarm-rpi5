@@ -2,7 +2,8 @@
 # tests/test_cli.sh — Unit tests for src/cli.sh
 set -euo pipefail
 
-TEST_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+TEST_PATH="$(realpath -- "${BASH_SOURCE[0]}")"
+TEST_DIR="$(dirname -- "${TEST_PATH}")"
 # shellcheck source=tests/test_helper.sh
 source "${TEST_DIR}/test_helper.sh"
 
@@ -24,8 +25,8 @@ source "${SRC_DIR}/logger.sh"
 source "${SRC_DIR}/cli.sh"
 
 # Test 1: usage() output contains key documentation
-usage_txt="$(SCRIPT_NAME="build-alarm-rpi5.sh" usage)"
-assert_contains "$usage_txt" "Usage: sudo ./build-alarm-rpi5.sh [OPTIONS]" "usage lists correct command"
+usage_txt="$(SCRIPT_NAME="build.sh" usage)"
+assert_contains "$usage_txt" "Usage: sudo ./build.sh [OPTIONS]" "usage lists correct command"
 assert_contains "$usage_txt" "--check" "usage lists --check"
 assert_contains "$usage_txt" "--interactive" "usage lists --interactive"
 assert_contains "$usage_txt" "--non-interactive" "usage lists --non-interactive"
@@ -34,7 +35,6 @@ assert_contains "$usage_txt" "--version" "usage lists --version"
 assert_contains "$usage_txt" "--img-size" "usage lists --img-size"
 assert_contains "$usage_txt" "--hostname" "usage lists --hostname"
 assert_contains "$usage_txt" "--no-compress" "usage lists --no-compress"
-assert_contains "$usage_txt" "--no-gum" "usage lists --no-gum"
 
 # Helper to reset cli arg globals before each test
 reset_args() {
@@ -50,7 +50,6 @@ reset_args() {
     _arg_root_user=""
     _arg_root_password=""
     _arg_no_compress=""
-    USE_GUM=1
 }
 
 # Test 2: parse_cli flags
@@ -81,10 +80,6 @@ assert_eq "1" "$_arg_non_interactive" "parse_cli sets _arg_non_interactive for -
 reset_args
 parse_cli "--batch"
 assert_eq "1" "$_arg_non_interactive" "parse_cli sets _arg_non_interactive for --batch"
-
-reset_args
-parse_cli "--no-gum"
-assert_eq "0" "$USE_GUM" "parse_cli disables USE_GUM on --no-gum"
 
 reset_args
 parse_cli "--output-dir" "/custom/dist"

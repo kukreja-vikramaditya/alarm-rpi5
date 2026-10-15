@@ -3,44 +3,58 @@
 
 # Ensure terminal capabilities are loaded
 if [[ -z "${GUM_INITIALIZED:-}" ]]; then
-    LOGGER_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+    LOGGER_PATH="$(realpath -- "${BASH_SOURCE[0]}")"
+    LOGGER_DIR="$(dirname -- "${LOGGER_PATH}")"
     # shellcheck source=src/terminal.sh
     source "${LOGGER_DIR}/terminal.sh"
 fi
 
 _log() { printf '[%s] [%-5s] %s\n' "$(date '+%H:%M:%S')" "$1" "$2"; }
 
-log_info() {
-    if [[ "${USE_GUM:-0}" -eq 1 ]]; then
-        printf '  %s %s\n' "$("$GUM_BIN" style --foreground 39 "ℹ")" "$*"
+# Format string substitution helper (Java String.format equivalent)
+# Usage: format_string <var_name> <template> [args...]
+format_string() {
+    local _var_name="$1"
+    local _fmt="$2"
+    shift 2
+    # shellcheck disable=SC2059
+    printf -v "$_var_name" "$_fmt" "$@"
+}
+
+_format_log_msg() {
+    if [[ $# -gt 1 ]]; then
+        local fmt="$1"
+        shift
+        # shellcheck disable=SC2059
+        printf -v _LOG_MSG "$fmt" "$@"
     else
-        _log "INFO" "$*"
+        _LOG_MSG="${1:-}"
     fi
+}
+
+log_info() {
+    local _LOG_MSG
+    _format_log_msg "$@"
+    printf '  %s %s\n' "$("$GUM_BIN" style --foreground 39 "ℹ")" "$_LOG_MSG"
 }
 
 log_warn() {
-    if [[ "${USE_GUM:-0}" -eq 1 ]]; then
-        printf '  %s %s\n' "$("$GUM_BIN" style --foreground 214 "⚠")" "$*" >&2
-    else
-        _log "WARN" "$*" >&2
-    fi
+    local _LOG_MSG
+    _format_log_msg "$@"
+    printf '  %s %s\n' "$("$GUM_BIN" style --foreground 214 "⚠")" "$_LOG_MSG" >&2
 }
 
 log_error() {
-    if [[ "${USE_GUM:-0}" -eq 1 ]]; then
-        printf '  %s %s\n' "$("$GUM_BIN" style --foreground 196 --bold "✖")" "$*" >&2
-    else
-        _log "ERROR" "$*" >&2
-    fi
+    local _LOG_MSG
+    _format_log_msg "$@"
+    printf '  %s %s\n' "$("$GUM_BIN" style --foreground 196 --bold "✖")" "$_LOG_MSG" >&2
 }
 
 log_phase() {
-    if [[ "${USE_GUM:-0}" -eq 1 ]]; then
-        printf '\n'
-        "$GUM_BIN" style --bold --foreground 212 "==> $*"
-    else
-        printf '\n[%s] === %s ===\n' "$(date '+%H:%M:%S')" "$*"
-    fi
+    local _LOG_MSG
+    _format_log_msg "$@"
+    printf '\n'
+    "$GUM_BIN" style --bold --foreground 212 "==> $_LOG_MSG"
 }
 
 die() {
