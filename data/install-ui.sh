@@ -39,8 +39,9 @@ TARGET_DE="$(echo "$TARGET_DE" | tr '[:upper:]' '[:lower:]')"
 
 echo ""
 echo "==> Step 1/3: Installing GPU acceleration drivers, fonts, and audio..."
+pacman -Rdd --noconfirm xf86-video-fbdev 2>/dev/null || true
 pacman -Syu --needed --noconfirm \
-    mesa libdrm xf86-video-fbdev \
+    mesa libdrm \
     ttf-dejavu ttf-liberation noto-fonts \
     pipewire pipewire-pulse wireplumber
 
@@ -52,6 +53,12 @@ case "$TARGET_DE" in
             xfce4 xfce4-goodies \
             lightdm lightdm-gtk-greeter \
             xorg-server xorg-xinit
+
+        # Configure LightDM to use lightdm-gtk-greeter
+        if [[ -f /etc/lightdm/lightdm.conf ]]; then
+            sed -i 's/^#*greeter-session=.*/greeter-session=lightdm-gtk-greeter/' /etc/lightdm/lightdm.conf
+        fi
+
         echo "==> Step 3/3: Enabling LightDM login manager service..."
         systemctl enable lightdm.service
         ;;

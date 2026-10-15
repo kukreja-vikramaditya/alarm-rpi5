@@ -301,7 +301,7 @@ If you prefer installing components manually, or want to understand the role of 
 
 ```bash
 sudo pacman -Syu --needed --noconfirm \
-  mesa libdrm xf86-video-fbdev \
+  mesa libdrm \
   ttf-dejavu ttf-liberation noto-fonts \
   pipewire pipewire-pulse wireplumber
 ```
@@ -309,7 +309,6 @@ sudo pacman -Syu --needed --noconfirm \
 #### What each package does:
 * **`mesa`**: The open-source 3D graphics library. Provides the `v3d` driver that enables hardware OpenGL and Vulkan acceleration on the Raspberry Pi 5's VideoCore VII GPU. Without Mesa, window rendering falls back to slow software emulation on the CPU.
 * **`libdrm`**: Direct Rendering Manager library. A low-level userspace library that lets programs talk directly to the Linux kernel graphics subsystem to allocate display buffers and manage video modes.
-* **`xf86-video-fbdev`**: Generic fallback framebuffer 2D driver for X11, ensuring a display output is always available even if a custom 3D mode fails.
 * **`ttf-dejavu`, `ttf-liberation`, `noto-fonts`**: High-quality TrueType fonts covering Latin and international character sets. Without fonts installed, web browsers and UI apps render blank boxes ("tofu") instead of text.
 * **`pipewire`**: Modern, low-latency multimedia routing framework that handles sound playback and microphone input.
 * **`pipewire-pulse`**: Drop-in PulseAudio compatibility layer that allows standard audio applications (browsers, Spotify, media players) to play sound through PipeWire seamlessly.
@@ -327,6 +326,9 @@ sudo pacman -S --needed --noconfirm \
   xfce4 xfce4-goodies \
   lightdm lightdm-gtk-greeter \
   xorg-server xorg-xinit
+
+# Configure LightDM to use lightdm-gtk-greeter
+sudo sed -i 's/^#*greeter-session=.*/greeter-session=lightdm-gtk-greeter/' /etc/lightdm/lightdm.conf
 
 sudo systemctl enable lightdm.service
 sudo reboot
