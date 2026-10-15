@@ -7,7 +7,7 @@ interactive_wizard_gum() {
     echo ""
 
     VERSION="$("$GUM_BIN" input --header "📦 Image Version" --value "${VERSION}")"
-    VERSION="${VERSION:-0.1.0}"
+    VERSION="${VERSION:-1.1.0-snapshot}"
 
     TARGET_HOSTNAME="$("$GUM_BIN" input --header "🏷️  Target Hostname" --value "${TARGET_HOSTNAME}")"
     TARGET_HOSTNAME="${TARGET_HOSTNAME:-raspberrypi}"

@@ -9,7 +9,7 @@ No third-party installers, no random GitHub projects. Just `pacstrap`, the offic
 A compressed raw disk image:
 
 ```
-dist/alarm-rpi5-0.1.0-20261015.img.xz
+dist/alarm-rpi5-1.1.0-snapshot-20261016.img.xz
 ```
 
 Flash it with Raspberry Pi Imager → **"Use custom"**.
@@ -134,7 +134,7 @@ Options:
   -y, --non-interactive,   Bypass interactive prompts and use defaults/flags
       --batch
   -o, --output-dir DIR     Output directory       (default: ./dist)
-  -v, --version VER        Image version string   (default: 0.1.0)
+  -v, --version VER        Image version string   (default: from VERSION file or 1.1.0-snapshot)
   -s, --img-size SIZE      Raw image size         (default: 3G)
       --hostname NAME      Target hostname        (default: raspberrypi)
   -u, --user USER          Non-root username      (default: alarm)
@@ -184,7 +184,7 @@ You can configure all options declaratively directly in `alarm.conf`.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `IMG_SIZE` | `3G` | Raw image size (fits on any SD card >=4GB; sparse zeros compress to ~340MB) |
-| `VERSION` | `0.1.0` | Embedded in output filename |
+| `VERSION` | `1.1.0-snapshot` | Embedded in output filename (tracks root `VERSION` file) |
 | `IMG_NAME` | `alarm-rpi5-{ver}-{date}` | Full override for output filename |
 | `BOOT_SIZE_MIB` | `256` | Boot partition size in MiB |
 | `TARGET_HOSTNAME` | `raspberrypi` | System hostname |

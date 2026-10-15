@@ -60,19 +60,39 @@ jobs:
           sudo modprobe loop max_part=8 || true
           ls -la /dev/loop* || true
 
+      - name: Compute Release Version & Metadata
+        id: meta
+        run: |
+          RAW_VER="$(tr -d ' \r\n' < VERSION 2>/dev/null || echo '1.1.0-snapshot')"
+          # Strip -snapshot or -SNAPSHOT if present for clean release artifact
+          CLEAN_VER="${RAW_VER%-snapshot}"
+          CLEAN_VER="${CLEAN_VER%-SNAPSHOT}"
+
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            TAG_VER="${{ github.ref_name }}"
+            BUILD_VER="${TAG_VER#v}"
+            echo "version=${BUILD_VER}" >> "$GITHUB_OUTPUT"
+            echo "tag_name=${TAG_VER}" >> "$GITHUB_OUTPUT"
+            echo "release_name=Release ${TAG_VER}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${CLEAN_VER}" >> "$GITHUB_OUTPUT"
+            echo "tag_name=latest" >> "$GITHUB_OUTPUT"
+            echo "release_name=Release v${CLEAN_VER} (${{ github.sha }})" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build ALARM image inside Arch Linux container
         run: |
           set -o pipefail
           echo "==> Building container builder image from Dockerfile..."
           docker build -t alarm-rpi5-builder . 2>&1 | tee docker-build.log
 
-          echo "==> Running ALARM image build inside container..."
+          echo "==> Running ALARM image build inside container with version ${{ steps.meta.outputs.version }}..."
           docker run --rm --privileged \
             -v /dev:/dev \
             -v /sys:/sys \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -w /workspace \
-            alarm-rpi5-builder -y 2>&1 | tee image-build.log
+            alarm-rpi5-builder -y --version "${{ steps.meta.outputs.version }}" 2>&1 | tee image-build.log
 
       - name: Push failure log on error
         if: failure()
@@ -115,17 +135,6 @@ jobs:
           path: dist/*
           if-no-files-found: error
           retention-days: 30
-
-      - name: Determine Release Metadata
-        id: meta
-        run: |
-          if [[ "${{ github.ref_type }}" == "tag" ]]; then
-            echo "tag_name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
-            echo "release_name=Release ${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag_name=latest" >> "$GITHUB_OUTPUT"
-            echo "release_name=Latest Continuous Build (${{ github.sha }})" >> "$GITHUB_OUTPUT"
-          fi
 
       - name: Publish to GitHub Releases
         uses: softprops/action-gh-release@v2

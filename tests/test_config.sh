@@ -45,7 +45,8 @@ _arg_output_dir=""
 _arg_no_compress=""
 init_config
 
-assert_eq "0.1.0" "$VERSION" "init_config default VERSION is 0.1.0"
+expected_ver="$(tr -d ' \r\n' <"${SCRIPT_DIR}/VERSION")"
+assert_eq "$expected_ver" "$VERSION" "init_config default VERSION tracks root VERSION file ($expected_ver)"
 assert_eq "raspberrypi" "$TARGET_HOSTNAME" "init_config default TARGET_HOSTNAME is raspberrypi"
 assert_eq "root" "$ROOT_USER" "init_config default ROOT_USER is root"
 assert_eq "root" "$ROOT_PASSWORD" "init_config default ROOT_PASSWORD is root"
@@ -56,7 +57,7 @@ assert_eq "1" "$COMPRESS" "init_config default COMPRESS is 1"
 assert_eq "256" "$BOOT_SIZE_MIB" "init_config default BOOT_SIZE_MIB is 256"
 assert_eq "Asia/Kolkata" "$TIMEZONE" "init_config default TIMEZONE is Asia/Kolkata"
 assert_contains "$OUTPUT_DIR" "/dist" "init_config OUTPUT_DIR points to dist"
-assert_contains "$IMG_FILE" "alarm-rpi5-0.1.0-" "init_config IMG_FILE contains version"
+assert_contains "$IMG_FILE" "alarm-rpi5-${expected_ver}-" "init_config IMG_FILE contains version"
 assert_contains "$DATA_DIR" "/data" "DATA_DIR points to data directory"
 assert_file_exists "${DATA_DIR}/fstab" "DATA_DIR contains fstab"
 

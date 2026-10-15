@@ -54,19 +54,30 @@ jobs:
           sudo modprobe loop max_part=8 || true
           ls -la /dev/loop* || true
 
+      - name: Compute Release Version & Metadata
+        id: meta
+        run: |
+          RAW_VER="$(tr -d ' \r\n' < VERSION 2>/dev/null || echo '1.1.0-snapshot')"
+          CLEAN_VER="${RAW_VER%-snapshot}"
+          CLEAN_VER="${CLEAN_VER%-SNAPSHOT}"
+          SNAPSHOT_DATE="$(date -u +'%Y-%m-%d')"
+          echo "version=${CLEAN_VER}" >> "$GITHUB_OUTPUT"
+          echo "snapshot_date=${SNAPSHOT_DATE}" >> "$GITHUB_OUTPUT"
+          echo "release_name=Rolling Snapshot (${SNAPSHOT_DATE})" >> "$GITHUB_OUTPUT"
+
       - name: Build ALARM image inside Arch Linux container
         run: |
           set -o pipefail
           echo "==> Building container builder image from Dockerfile..."
           docker build -t alarm-rpi5-builder . 2>&1 | tee docker-build.log
 
-          echo "==> Running ALARM image build inside container..."
+          echo "==> Running ALARM image build inside container with version ${{ steps.meta.outputs.version }}..."
           docker run --rm --privileged \
             -v /dev:/dev \
             -v /sys:/sys \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -w /workspace \
-            alarm-rpi5-builder -y 2>&1 | tee image-build.log
+            alarm-rpi5-builder -y --version "${{ steps.meta.outputs.version }}" 2>&1 | tee image-build.log
 
       - name: Push failure log on error
         if: failure()
@@ -108,13 +119,6 @@ jobs:
           path: dist/*
           if-no-files-found: error
           retention-days: 30
-
-      - name: Determine Release Metadata
-        id: meta
-        run: |
-          SNAPSHOT_DATE="$(date -u +'%Y-%m-%d')"
-          echo "snapshot_date=${SNAPSHOT_DATE}" >> "$GITHUB_OUTPUT"
-          echo "release_name=Rolling Snapshot (${SNAPSHOT_DATE})" >> "$GITHUB_OUTPUT"
 
       - name: Publish Rolling Snapshot to GitHub Releases
         uses: softprops/action-gh-release@v2

@@ -35,7 +35,13 @@ fi
 
 init_config() {
     IMG_SIZE="${_arg_img_size:-${IMG_SIZE:-3G}}"
-    VERSION="${_arg_version:-${VERSION:-0.1.0}}"
+    local default_ver="1.1.0-snapshot"
+    if [[ -n "${SCRIPT_DIR:-}" && -f "${SCRIPT_DIR}/VERSION" ]]; then
+        default_ver="$(tr -d ' \r\n' <"${SCRIPT_DIR}/VERSION")"
+    elif [[ -f "./VERSION" ]]; then
+        default_ver="$(tr -d ' \r\n' <"./VERSION")"
+    fi
+    VERSION="${_arg_version:-${VERSION:-${default_ver}}}"
     TARGET_HOSTNAME="${_arg_hostname:-${TARGET_HOSTNAME:-raspberrypi}}"
     ROOT_USER="${_arg_root_user:-${ROOT_USER:-root}}"
     ROOT_PASSWORD="${_arg_root_password:-${ROOT_PASSWORD:-root}}"

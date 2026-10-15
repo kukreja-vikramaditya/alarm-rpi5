@@ -18,7 +18,7 @@ Options:
   -y, --non-interactive,   Bypass interactive prompts and use defaults/flags
       --batch
   -o, --output-dir DIR     Output directory       (default: ${script_dir}/dist)
-  -v, --version VER        Image version string   (default: 0.1.0)
+  -v, --version VER        Image version string   (default: from VERSION file or 1.1.0-snapshot)
   -s, --img-size SIZE      Raw image size         (default: 3G)
       --hostname NAME      Target hostname        (default: raspberrypi)
   -u, --user USER          Non-root username      (default: alarm)
