@@ -7,6 +7,16 @@
 create_image() {
     log_phase "Phase 1/5 — Create disk image (${IMG_SIZE})"
 
+    mkdir -p -- "${OUTPUT_DIR}"
+
+    # Detach any loopback device already associated with this image file
+    if command -v losetup &>/dev/null && [[ -f "${IMG_FILE}" ]]; then
+        local ldev
+        while read -r ldev; do
+            [[ -n "$ldev" ]] && losetup -d "$ldev" 2>/dev/null || true
+        done < <(losetup -j "${IMG_FILE}" 2>/dev/null | cut -d: -f1)
+    fi
+
     # Allocate sparse file
     truncate -s "${IMG_SIZE}" "${IMG_FILE}"
     log_info "Sparse disk image allocated: ${IMG_FILE}"
@@ -195,16 +205,16 @@ configure_system() {
 	LocalFileSigLevel = Optional
 
 	[core]
-	Server = http://mirror.archlinuxarm.org/\$arch/\$repo
+	Server = ${ALARM_MIRROR}/\$arch/\$repo
 
 	[extra]
-	Server = http://mirror.archlinuxarm.org/\$arch/\$repo
+	Server = ${ALARM_MIRROR}/\$arch/\$repo
 
 	[alarm]
-	Server = http://mirror.archlinuxarm.org/\$arch/\$repo
+	Server = ${ALARM_MIRROR}/\$arch/\$repo
 
 	[aur]
-	Server = http://mirror.archlinuxarm.org/\$arch/\$repo
+	Server = ${ALARM_MIRROR}/\$arch/\$repo
 	PACCONF
 
 	# Clean pacman cache to reduce image size
@@ -262,9 +272,12 @@ finalize_image() {
     truncate_size=$(( part2_end + 1024 * 1024 ))
     truncate -s "${truncate_size}" -- "${IMG_FILE}"
 
-    # Re-attach and fix partition table to match truncated image
-    LOOP="$(losetup --find --show --partscan -- "${IMG_FILE}")"
+    # Fix partition table to match truncated image
     parted -s -- "${IMG_FILE}" resizepart 2 "${part2_end}B" 2>/dev/null || true
+
+    # Re-attach with partition scan to verify integrity and expand filesystem to boundary
+    LOOP="$(losetup --find --show --partscan -- "${IMG_FILE}")"
+    udevadm settle --timeout=5 2>/dev/null || sleep 1
     e2fsck -f -y "${LOOP}p2" >/dev/null 2>&1 || true
     resize2fs "${LOOP}p2" >/dev/null 2>&1 || true
     losetup -d "${LOOP}"

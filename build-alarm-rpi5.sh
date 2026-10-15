@@ -123,7 +123,7 @@ main() {
     local start_time
     start_time="$(date +%s)"
 
-    # 9. Execute 5-phase build pipeline
+    # 10. Execute 5-phase build pipeline
     create_image
     bootstrap_rootfs
     configure_boot

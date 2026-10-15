@@ -7,8 +7,11 @@ interactive_wizard_gum() {
     echo ""
 
     VERSION="$("$GUM_BIN" input --header "Image Version" --value "${VERSION}")"
+    VERSION="${VERSION:-0.1.0}"
     TARGET_HOSTNAME="$("$GUM_BIN" input --header "Target Hostname" --value "${TARGET_HOSTNAME}")"
+    TARGET_HOSTNAME="${TARGET_HOSTNAME:-raspberrypi}"
     ALARM_USER="$("$GUM_BIN" input --header "Non-Root Username" --value "${ALARM_USER}")"
+    ALARM_USER="${ALARM_USER:-alarm}"
 
     local new_root
     new_root="$("$GUM_BIN" input --password --header "Root Password (leave empty for default: ${ROOT_PASSWORD})")"

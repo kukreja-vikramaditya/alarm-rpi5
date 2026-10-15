@@ -65,7 +65,7 @@ check_environment() {
     fi
 
     # 6. Output directory writable
-    local out_dir="${OUTPUT_DIR:-${SCRIPT_DIR}/dist}"
+    local out_dir="${OUTPUT_DIR:-${SCRIPT_DIR:-.}/dist}"
     mkdir -p -- "$out_dir" 2>/dev/null || true
     if [[ -w "$out_dir" ]]; then
         printf '  %-32s %s (%s)\n' "Output dir writable" "$(format_badge OK)" "$out_dir"
