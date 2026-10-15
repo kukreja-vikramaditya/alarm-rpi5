@@ -1,0 +1,19 @@
+# Build output
+dist/
+
+# Temporary files
+*.img
+*.img.xz
+*.img.gz
+*.img.zip
+
+# Editor
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
