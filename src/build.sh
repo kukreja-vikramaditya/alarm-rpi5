@@ -3,9 +3,22 @@
 
 ensure_loop_partitions() {
     local ldev="$1"
+    local devname
+    devname="$(basename "$ldev")"
     if [[ ! -b "${ldev}p1" || ! -b "${ldev}p2" ]]; then
         partx -u "${ldev}" 2>/dev/null || partprobe "${ldev}" 2>/dev/null || true
         udevadm settle --timeout=5 2>/dev/null || sleep 1
+        local p
+        for p in 1 2; do
+            if [[ ! -b "${ldev}p${p}" ]]; then
+                local sys_dev="/sys/class/block/${devname}p${p}/dev"
+                if [[ -f "$sys_dev" ]]; then
+                    local maj min
+                    IFS=: read -r maj min <"$sys_dev"
+                    mknod -m 660 "${ldev}p${p}" b "$maj" "$min" 2>/dev/null || true
+                fi
+            fi
+        done
     fi
 }
 

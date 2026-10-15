@@ -55,35 +55,17 @@ jobs:
 
       - name: Build ALARM image inside Arch Linux container
         run: |
+          echo "==> Building container builder image from Dockerfile..."
+          docker build -t alarm-rpi5-builder .
+
+          echo "==> Running ALARM image build inside container..."
           docker run --rm --privileged \
             -v /dev:/dev \
             -v /sys:/sys \
             -v /proc/sys/fs/binfmt_misc:/proc/sys/fs/binfmt_misc \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -w /workspace \
-            archlinux:base-devel \
-            bash -c '
-              set -euo pipefail
-              echo "==> Initializing pacman keys and installing build dependencies..."
-              pacman-key --init
-              pacman-key --populate archlinux
-              pacman -Syu --noconfirm --needed \
-                arch-install-scripts \
-                dosfstools \
-                e2fsprogs \
-                parted \
-                xz \
-                util-linux \
-                coreutils \
-                qemu-user-static \
-                qemu-user-static-binfmt
-
-              echo "==> Verifying host environment diagnostics..."
-              ./build-alarm-rpi5.sh --check
-
-              echo "==> Building Arch Linux ARM Raspberry Pi 5 Image (batch mode)..."
-              ./build-alarm-rpi5.sh -y
-            '
+            alarm-rpi5-builder -y
 
       - name: Generate SHA-256 Checksums
         id: checksums

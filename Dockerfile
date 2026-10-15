@@ -3,6 +3,7 @@ FROM archlinux:base-devel
 # Initialize pacman keyring and install build tools
 RUN pacman-key --init && \
     pacman-key --populate archlinux && \
+    pacman -Sy --noconfirm archlinux-keyring && \
     pacman -Syu --noconfirm --needed \
         arch-install-scripts \
         dosfstools \
