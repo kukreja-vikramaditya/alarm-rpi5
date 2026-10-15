@@ -210,6 +210,8 @@ configure_system() {
 	printf '%s\n' "${ALARM_USER}:${ALARM_PASSWORD}" | chpasswd
 	chown -R "${ALARM_USER}:${ALARM_USER}" "/home/${ALARM_USER}"
 	chmod 700 "/home/${ALARM_USER}"
+	# Secure any other user home directories if present
+	find /home -mindepth 1 -maxdepth 1 -type d -exec chmod 700 {} +
 
 	# Clean pacman cache to reduce image size
 	pacman -Scc --noconfirm

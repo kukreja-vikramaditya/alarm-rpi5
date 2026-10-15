@@ -45,6 +45,10 @@ reset_args() {
     _arg_version=""
     _arg_img_size=""
     _arg_hostname=""
+    _arg_user=""
+    _arg_password=""
+    _arg_root_user=""
+    _arg_root_password=""
     _arg_no_compress=""
     USE_GUM=1
 }
@@ -111,20 +115,50 @@ parse_cli "--hostname" "picluster"
 assert_eq "picluster" "$_arg_hostname" "parse_cli sets _arg_hostname for --hostname"
 
 reset_args
+parse_cli "-u" "myuser"
+assert_eq "myuser" "$_arg_user" "parse_cli sets _arg_user for -u"
+
+reset_args
+parse_cli "--user" "vikram"
+assert_eq "vikram" "$_arg_user" "parse_cli sets _arg_user for --user"
+
+reset_args
+parse_cli "--username" "customuser"
+assert_eq "customuser" "$_arg_user" "parse_cli sets _arg_user for --username"
+
+reset_args
+parse_cli "-p" "mypass123"
+assert_eq "mypass123" "$_arg_password" "parse_cli sets _arg_password for -p"
+
+reset_args
+parse_cli "--password" "secretpwd"
+assert_eq "secretpwd" "$_arg_password" "parse_cli sets _arg_password for --password"
+
+reset_args
+parse_cli "--root-user" "admin"
+assert_eq "admin" "$_arg_root_user" "parse_cli sets _arg_root_user for --root-user"
+
+reset_args
+parse_cli "--root-password" "adminpass"
+assert_eq "adminpass" "$_arg_root_password" "parse_cli sets _arg_root_password for --root-password"
+
+reset_args
 parse_cli "--no-compress"
 assert_eq "1" "$_arg_no_compress" "parse_cli sets _arg_no_compress for --no-compress"
 
 # Test 3: Multiple combined flags
 reset_args
-parse_cli -y -v 1.2.3 -s 8G --hostname node01 --no-compress
+parse_cli -y -v 1.2.3 -s 8G --hostname node01 -u vikram -p pass123 --no-compress
 assert_eq "1" "$_arg_non_interactive" "combined flags: -y"
 assert_eq "1.2.3" "$_arg_version" "combined flags: -v"
 assert_eq "8G" "$_arg_img_size" "combined flags: -s"
 assert_eq "node01" "$_arg_hostname" "combined flags: --hostname"
+assert_eq "vikram" "$_arg_user" "combined flags: -u"
+assert_eq "pass123" "$_arg_password" "combined flags: -p"
 assert_eq "1" "$_arg_no_compress" "combined flags: --no-compress"
 
 # Test 4: Missing arguments
-for opt in "-o" "--output-dir" "-v" "--version" "-s" "--img-size" "--hostname"; do
+for opt in "-o" "--output-dir" "-v" "--version" "-s" "--img-size" "--hostname" "-u" "--user" "--username" "-p" "--password" "--root-user" "--root-password"; do
     set +e
     err_out="$(parse_cli "$opt" 2>&1)"
     code=$?

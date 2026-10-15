@@ -21,19 +21,24 @@ Options:
   -v, --version VER        Image version string   (default: 0.1.0)
   -s, --img-size SIZE      Raw image size         (default: 4G)
       --hostname NAME      Target hostname        (default: raspberrypi)
+  -u, --user USER          Non-root username      (default: alarm)
+  -p, --password PASS      Non-root user password (default: alarm)
+      --root-user USER     Root username          (default: root)
+      --root-password PASS Root password          (default: root)
       --no-compress        Skip xz compression
       --no-gum             Disable Gum styling and interactive elements
   -h, --help               Show this help
 
 Environment overrides (lower precedence than flags):
   IMG_SIZE, VERSION, IMG_NAME, BOOT_SIZE_MIB, TARGET_HOSTNAME,
-  ROOT_USER, ROOT_PASSWORD, ALARM_USER, ALARM_PASSWORD, TIMEZONE, LOCALE,
-  EXTRA_PACKAGES, ALARM_MIRROR, COMPRESS
+  ROOT_USER, ROOT_PASSWORD, ALARM_USER, NON_ROOT_USER, ALARM_PASSWORD,
+  TIMEZONE, LOCALE, EXTRA_PACKAGES, ALARM_MIRROR, COMPRESS
 
 Examples:
   ./${script_name} --check
   sudo ./${script_name}                  # interactive wizard by default
   sudo ./${script_name} -y               # build immediately with defaults
+  sudo ./${script_name} -u vikram -p secret123
   sudo ./${script_name} -o /mnt/build -v 1.0.0
   EXTRA_PACKAGES="git htop" sudo ./${script_name}
 USAGE
@@ -47,6 +52,10 @@ _arg_output_dir=""
 _arg_version=""
 _arg_img_size=""
 _arg_hostname=""
+_arg_user=""
+_arg_password=""
+_arg_root_user=""
+_arg_root_password=""
 _arg_no_compress=""
 
 parse_cli() {
@@ -86,6 +95,26 @@ parse_cli() {
             --hostname)
                 [[ -n "${2:-}" ]] || die "Missing argument for $1"
                 _arg_hostname="$2"
+                shift 2
+                ;;
+            -u | --user | --username)
+                [[ -n "${2:-}" ]] || die "Missing argument for $1"
+                _arg_user="$2"
+                shift 2
+                ;;
+            -p | --password)
+                [[ -n "${2:-}" ]] || die "Missing argument for $1"
+                _arg_password="$2"
+                shift 2
+                ;;
+            --root-user)
+                [[ -n "${2:-}" ]] || die "Missing argument for $1"
+                _arg_root_user="$2"
+                shift 2
+                ;;
+            --root-password)
+                [[ -n "${2:-}" ]] || die "Missing argument for $1"
+                _arg_root_password="$2"
                 shift 2
                 ;;
             --no-compress)

@@ -59,10 +59,13 @@ assert_contains "$IMG_FILE" "alarm-rpi5-0.1.0-" "init_config IMG_FILE contains v
 assert_contains "$DATA_DIR" "/data" "DATA_DIR points to data directory"
 assert_file_exists "${DATA_DIR}/fstab" "DATA_DIR contains fstab"
 
-# Test 3: CLI arguments override defaults
 _arg_version="1.5.0"
 _arg_img_size="8G"
 _arg_hostname="alarm-host"
+_arg_user="customuser"
+_arg_password="custompass"
+_arg_root_user="superuser"
+_arg_root_password="superpass"
 _arg_output_dir="/tmp/test-alarm-out"
 _arg_no_compress="1"
 init_config
@@ -70,9 +73,20 @@ init_config
 assert_eq "1.5.0" "$VERSION" "_arg_version overrides default VERSION"
 assert_eq "8G" "$IMG_SIZE" "_arg_img_size overrides default IMG_SIZE"
 assert_eq "alarm-host" "$TARGET_HOSTNAME" "_arg_hostname overrides default TARGET_HOSTNAME"
+assert_eq "customuser" "$ALARM_USER" "_arg_user overrides default ALARM_USER"
+assert_eq "custompass" "$ALARM_PASSWORD" "_arg_password overrides default ALARM_PASSWORD"
+assert_eq "superuser" "$ROOT_USER" "_arg_root_user overrides default ROOT_USER"
+assert_eq "superpass" "$ROOT_PASSWORD" "_arg_root_password overrides default ROOT_PASSWORD"
 assert_eq "/tmp/test-alarm-out" "$OUTPUT_DIR" "_arg_output_dir overrides default OUTPUT_DIR"
 assert_eq "0" "$COMPRESS" "_arg_no_compress sets COMPRESS to 0"
 rmdir "/tmp/test-alarm-out" 2>/dev/null || true
+
+# Test 3b: NON_ROOT_USER environment fallback
+_arg_user=""
+NON_ROOT_USER="envuser"
+init_config
+assert_eq "envuser" "$ALARM_USER" "NON_ROOT_USER overrides default ALARM_USER"
+unset NON_ROOT_USER
 
 # Test 4: recompute_image_paths updates paths when VERSION changes
 VERSION="2.0.0"
