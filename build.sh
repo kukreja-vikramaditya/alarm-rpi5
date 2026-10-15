@@ -49,7 +49,7 @@ main() {
     # 2. Host-to-Container Bridge
     # Unless inside a container (/.dockerenv / ALARM_INTERNAL_BUILD) or forced native mode,
     # build seamlessly inside the Arch Linux container image.
-    if [[ ! -f /.dockerenv && -z "${ALARM_INTERNAL_BUILD:-}" && "${ALARM_NATIVE:-0}" -ne 1 ]]; then
+    if [[ "${ALARM_FORCE_HOST_MODE:-0}" -eq 1 ]] || [[ ! -f /.dockerenv && -z "${ALARM_INTERNAL_BUILD:-}" && "${ALARM_NATIVE:-0}" -ne 1 ]]; then
         if [[ -n "${_arg_check:-}" ]]; then
             log_phase "Host Docker Environment Diagnostics"
             if command -v docker &>/dev/null; then
@@ -65,7 +65,7 @@ main() {
             return 0
         fi
 
-        if ! command -v docker &>/dev/null || ! docker --version &>/dev/null; then
+        if [[ "${MOCK_DOCKER_MISSING:-0}" -eq 1 ]] || ! command -v docker &>/dev/null || ! docker --version &>/dev/null; then
             die "Docker is required to build Arch Linux ARM images on non-Arch hosts.
 Please install Docker and ensure the Docker daemon is running.
 If using Docker Desktop on Windows with WSL 2, enable WSL Integration in:
@@ -105,7 +105,7 @@ If using Docker Desktop on Windows with WSL 2, enable WSL Integration in:
     fi
 
     # 5. IMMEDIATE ROOT/SUDO CHECK — RUNS BEFORE ANY WIZARD QUESTIONS
-    if [[ $EUID -ne 0 ]]; then
+    if [[ "${MOCK_EUID:-$EUID}" -ne 0 ]]; then
         if [[ -t 0 && -t 1 ]]; then
             log_warn "Root privileges are required to build disk images (mount, losetup, pacstrap)."
             log_info "Prompting for sudo password..."

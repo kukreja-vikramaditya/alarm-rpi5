@@ -54,15 +54,15 @@ for opt in "-o" "-v" "-s" "--hostname"; do
     assert_contains "$err_out" "Missing argument for $opt" "missing arg error message"
 done
 
-# Test 6: Host mode enforces Docker
+# Test 6: Host mode enforces Docker requirement
 set +e
-host_out="$(ALARM_NATIVE=0 "$BIN" 2>&1 || true)"
+host_out="$(ALARM_FORCE_HOST_MODE=1 MOCK_DOCKER_MISSING=1 "$BIN" 2>&1 || true)"
 set -e
 assert_contains "$host_out" "Docker is required" "host mode enforces Docker requirement"
 
 # Test 7: Container / native non-root invocation
 set +e
-out="$(ALARM_NATIVE=1 "$BIN" 2>&1)"
+out="$(MOCK_EUID=1000 ALARM_NATIVE=1 "$BIN" 2>&1)"
 code=$?
 set -e
 assert_eq "1" "$code" "non-root build attempt exits with code 1"
@@ -78,7 +78,7 @@ assert_contains "$out" "requires an interactive terminal" "--interactive non-tty
 
 # Test 9: Non-interactive batch flag (-y) without root in container/native
 set +e
-out="$(ALARM_NATIVE=1 "$BIN" -y 2>&1)"
+out="$(MOCK_EUID=1000 ALARM_NATIVE=1 "$BIN" -y 2>&1)"
 code=$?
 set -e
 assert_eq "1" "$code" "-y without root exits with code 1"

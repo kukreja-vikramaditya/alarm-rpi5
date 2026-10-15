@@ -54,13 +54,11 @@ assert_contains "$check_out" "ALARM mirror reachable" "check_environment tests m
 assert_contains "$check_out" "Output dir writable" "check_environment checks output dir"
 
 # Test 3: preflight enforces root privileges
-if [[ $EUID -ne 0 ]]; then
-    set +e
-    pre_out="$(preflight 2>&1)"
-    pre_code=$?
-    set -e
-    assert_eq "1" "$pre_code" "preflight exits 1 when non-root"
-    assert_contains "$pre_out" "This script must be run as root" "preflight root error message"
-fi
+set +e
+pre_out="$(MOCK_EUID=1000 preflight 2>&1)"
+pre_code=$?
+set -e
+assert_eq "1" "$pre_code" "preflight exits 1 when non-root"
+assert_contains "$pre_out" "This script must be run as root" "preflight root error message"
 
 test_summary "src/doctor.sh"

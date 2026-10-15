@@ -87,7 +87,7 @@ preflight() {
     log_phase "Preflight checks"
 
     # Enforce root
-    if [[ $EUID -ne 0 ]]; then
+    if [[ "${MOCK_EUID:-$EUID}" -ne 0 ]]; then
         die "This script must be run as root (or via sudo)."
     fi
 
