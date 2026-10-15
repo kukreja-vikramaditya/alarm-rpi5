@@ -8,48 +8,70 @@ interactive_wizard_gum() {
 
     VERSION="$("$GUM_BIN" input --header "📦 Image Version" --value "${VERSION}")"
     VERSION="${VERSION:-1.1.0-snapshot}"
+    "$GUM_BIN" style --foreground 212 "  ✓ Image Version:     ${VERSION}"
 
     TARGET_HOSTNAME="$("$GUM_BIN" input --header "🏷️  Target Hostname" --value "${TARGET_HOSTNAME}")"
     TARGET_HOSTNAME="${TARGET_HOSTNAME:-raspberrypi}"
+    "$GUM_BIN" style --foreground 212 "  ✓ Target Hostname:   ${TARGET_HOSTNAME}"
 
     # 1. Root Credentials
     ROOT_USER="$("$GUM_BIN" input --header "👑 Root Username" --value "${ROOT_USER:-root}")"
     ROOT_USER="${ROOT_USER:-root}"
+    "$GUM_BIN" style --foreground 212 "  ✓ Root Username:     ${ROOT_USER}"
 
     local new_root
     new_root="$("$GUM_BIN" input --password --header "🔑 Root Password (leave empty for default: ${ROOT_PASSWORD})")"
     [[ -n "$new_root" ]] && ROOT_PASSWORD="$new_root"
+    "$GUM_BIN" style --foreground 212 "  ✓ Root Password:     ********"
 
     # 2. Non-Root Credentials
     ALARM_USER="$("$GUM_BIN" input --header "👤 Non-Root Username" --value "${ALARM_USER}")"
     ALARM_USER="${ALARM_USER:-alarm}"
+    "$GUM_BIN" style --foreground 212 "  ✓ Non-Root Username: ${ALARM_USER}"
 
     local new_user
     new_user="$("$GUM_BIN" input --password --header "🔒 ${ALARM_USER} Password (leave empty for default: ${ALARM_PASSWORD})")"
     [[ -n "$new_user" ]] && ALARM_PASSWORD="$new_user"
+    "$GUM_BIN" style --foreground 212 "  ✓ User Password:     ********"
 
     IMG_SIZE="$("$GUM_BIN" choose --header "💾 Raw disk size (3G fits on any SD card >=4GB):" "3G" "4G" "8G" "16G" "32G")"
+    IMG_SIZE="${IMG_SIZE:-3G}"
+    "$GUM_BIN" style --foreground 212 "  ✓ Raw Disk Size:     ${IMG_SIZE}"
 
     local comp_sel
     comp_sel="$("$GUM_BIN" choose --header "🗜️  XZ Compression:" "📦 Enabled (.img.xz - smaller, recommended)" "⚡ Disabled (.img - raw)")"
     if [[ "$comp_sel" == *"Disabled"* ]]; then
         COMPRESS=0
+        "$GUM_BIN" style --foreground 212 "  ✓ XZ Compression:    Disabled (.img)"
     else
         COMPRESS=1
+        "$GUM_BIN" style --foreground 212 "  ✓ XZ Compression:    Enabled (.img.xz)"
     fi
 
     recompute_image_paths
 
+    local exec_cmd
+    exec_cmd="sudo ./${SCRIPT_NAME:-build.sh} -y -v \"${VERSION}\" --hostname \"${TARGET_HOSTNAME}\" --root-user \"${ROOT_USER}\" -u \"${ALARM_USER}\" -s \"${IMG_SIZE}\""
+    if [[ "${COMPRESS}" -eq 0 ]]; then
+        exec_cmd+=" --no-compress"
+    fi
+    if [[ -n "${OUTPUT_DIR:-}" && "${OUTPUT_DIR}" != "${SCRIPT_DIR}/dist" && "${OUTPUT_DIR}" != "./dist" ]]; then
+        exec_cmd+=" -o \"${OUTPUT_DIR}\""
+    fi
+
     echo ""
     "$GUM_BIN" style --border normal --padding "1 2" \
         "📋 Build Summary:" \
-        "  Version:       ${VERSION}" \
-        "  Hostname:      ${TARGET_HOSTNAME}" \
-        "  Root User:     ${ROOT_USER}" \
-        "  Non-Root User: ${ALARM_USER}" \
-        "  Image Size:    ${IMG_SIZE}" \
-        "  Compressed:    $((COMPRESS ? 1 : 0)) (xz)" \
-        "  Output Path:   ${OUTPUT_DIR}/"
+        "  Version:          ${VERSION}" \
+        "  Hostname:         ${TARGET_HOSTNAME}" \
+        "  Root User:        ${ROOT_USER}" \
+        "  Non-Root User:    ${ALARM_USER}" \
+        "  Image Size:       ${IMG_SIZE}" \
+        "  Compressed:       $((COMPRESS ? 1 : 0)) (xz)" \
+        "  Output Path:      ${OUTPUT_DIR}/" \
+        "" \
+        "💻 Executable Command:" \
+        "  ${exec_cmd}"
     echo ""
 
     if ! "$GUM_BIN" confirm "🚀 Start building with these settings?"; then
@@ -97,16 +119,28 @@ interactive_wizard_bash() {
 
     recompute_image_paths
 
+    local exec_cmd
+    exec_cmd="sudo ./${SCRIPT_NAME:-build.sh} -y -v \"${VERSION}\" --hostname \"${TARGET_HOSTNAME}\" --root-user \"${ROOT_USER:-root}\" -u \"${ALARM_USER}\" -s \"${IMG_SIZE}\""
+    if [[ "${COMPRESS}" -eq 0 ]]; then
+        exec_cmd+=" --no-compress"
+    fi
+    if [[ -n "${OUTPUT_DIR:-}" && "${OUTPUT_DIR}" != "${SCRIPT_DIR}/dist" && "${OUTPUT_DIR}" != "./dist" ]]; then
+        exec_cmd+=" -o \"${OUTPUT_DIR}\""
+    fi
+
     cat <<SUMMARY
 
 📋 Build Summary:
-  Version:       ${VERSION}
-  Hostname:      ${TARGET_HOSTNAME}
-  Root User:     ${ROOT_USER:-root}
-  Non-Root User: ${ALARM_USER}
-  Image Size:    ${IMG_SIZE}
-  Compressed:    $((COMPRESS ? 1 : 0)) (xz)
-  Output Path:   ${OUTPUT_DIR}/
+  Version:          ${VERSION}
+  Hostname:         ${TARGET_HOSTNAME}
+  Root User:        ${ROOT_USER:-root}
+  Non-Root User:    ${ALARM_USER}
+  Image Size:       ${IMG_SIZE}
+  Compressed:       $((COMPRESS ? 1 : 0)) (xz)
+  Output Path:      ${OUTPUT_DIR}/
+
+💻 Executable Command:
+  ${exec_cmd}
 
 SUMMARY
 
