@@ -35,16 +35,15 @@ LOCALE="en_US.UTF-8"
 # ------------------------------------------------------------------------------
 # Additional packages to install into rootfs via pacman (space-separated).
 # Base packages already installed: base, linux-rpi, firmware-raspberrypi,
-# raspberrypi-bootloader, archlinuxarm-keyring, openssh, sudo, nano,
-# networkmanager, iwd.
+# raspberrypi-bootloader, archlinuxarm-keyring, openssh, sudo, nano, e2fsprogs.
 # Example: EXTRA_PACKAGES="git htop neovim tmux curl wget bash-completion"
 EXTRA_PACKAGES=""
 
 # ------------------------------------------------------------------------------
 # 5. Disk & Filesystem Layout
 # ------------------------------------------------------------------------------
-# Raw disk image size before shrinking (4G, 8G, 16G, etc.)
-IMG_SIZE="4G"
+# Raw disk image size (3G, 4G, 8G, etc. — 3G gives ~1.8GB free headroom)
+IMG_SIZE="3G"
 
 # Boot partition size in MiB (FAT32 EFI/boot)
 BOOT_SIZE_MIB="256"

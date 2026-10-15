@@ -5,8 +5,7 @@
 # External required commands for building and packaging
 readonly REQUIRED_CMDS=(
     parted mkfs.vfat mkfs.ext4 losetup
-    pacstrap arch-chroot
-    truncate e2fsck resize2fs dumpe2fs tune2fs
+    pacstrap arch-chroot truncate
     xz numfmt
 )
 
@@ -35,7 +34,7 @@ elif [[ -f "./alarm.conf" ]]; then
 fi
 
 init_config() {
-    IMG_SIZE="${_arg_img_size:-${IMG_SIZE:-4G}}"
+    IMG_SIZE="${_arg_img_size:-${IMG_SIZE:-3G}}"
     VERSION="${_arg_version:-${VERSION:-0.1.0}}"
     TARGET_HOSTNAME="${_arg_hostname:-${TARGET_HOSTNAME:-raspberrypi}}"
     ROOT_USER="${_arg_root_user:-${ROOT_USER:-root}}"

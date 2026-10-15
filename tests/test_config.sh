@@ -24,8 +24,8 @@ source "${SRC_DIR}/logger.sh"
 source "${SRC_DIR}/config.sh"
 
 # Test 1: REQUIRED_CMDS array
-assert_eq "13" "${#REQUIRED_CMDS[@]}" "REQUIRED_CMDS has 13 items"
-for req in parted mkfs.vfat mkfs.ext4 losetup pacstrap arch-chroot truncate e2fsck resize2fs dumpe2fs tune2fs xz numfmt; do
+assert_eq "9" "${#REQUIRED_CMDS[@]}" "REQUIRED_CMDS has 9 items"
+for req in parted mkfs.vfat mkfs.ext4 losetup pacstrap arch-chroot truncate xz numfmt; do
     found=0
     for c in "${REQUIRED_CMDS[@]}"; do
         [[ "$c" == "$req" ]] && {
@@ -50,7 +50,7 @@ assert_eq "root" "$ROOT_USER" "init_config default ROOT_USER is root"
 assert_eq "root" "$ROOT_PASSWORD" "init_config default ROOT_PASSWORD is root"
 assert_eq "alarm" "$ALARM_USER" "init_config default ALARM_USER is alarm"
 assert_eq "alarm" "$ALARM_PASSWORD" "init_config default ALARM_PASSWORD is alarm"
-assert_eq "4G" "$IMG_SIZE" "init_config default IMG_SIZE is 4G"
+assert_eq "3G" "$IMG_SIZE" "init_config default IMG_SIZE is 3G"
 assert_eq "1" "$COMPRESS" "init_config default COMPRESS is 1"
 assert_eq "256" "$BOOT_SIZE_MIB" "init_config default BOOT_SIZE_MIB is 256"
 assert_eq "Asia/Kolkata" "$TIMEZONE" "init_config default TIMEZONE is Asia/Kolkata"

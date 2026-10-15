@@ -116,11 +116,7 @@ bootstrap_rootfs() {
         openssh
         sudo
         nano
-        networkmanager
-        iwd
         e2fsprogs
-        parted
-        linux-firmware-broadcom
     )
 
     # Append user-specified extra packages
@@ -173,44 +169,35 @@ configure_system() {
 
     sed "s|@ALARM_MIRROR@|${ALARM_MIRROR}|g" "${DATA_DIR}/pacman-runtime.conf" >"${ROOTFS}/etc/pacman.conf"
 
-    # Install first-boot auto-expand service
-    mkdir -p -- "${ROOTFS}/usr/local/bin" "${ROOTFS}/etc/systemd/system"
-    cp -- "${DATA_DIR}/alarm-growfs.sh" "${ROOTFS}/usr/local/bin/alarm-growfs"
-    chmod 755 "${ROOTFS}/usr/local/bin/alarm-growfs"
-    cp -- "${DATA_DIR}/alarm-growfs.service" "${ROOTFS}/etc/systemd/system/alarm-growfs.service"
-    chmod 644 "${ROOTFS}/etc/systemd/system/alarm-growfs.service"
+    # Pre-configure native systemd-networkd for automatic wired DHCP on any ethernet interface
+    mkdir -p -- "${ROOTFS}/etc/systemd/network"
+    cp -- "${DATA_DIR}/20-wired.network" "${ROOTFS}/etc/systemd/network/20-wired.network"
 
     # Ensure system config files have standard read permissions
-    chmod 644 "${ROOTFS}/etc/hostname" "${ROOTFS}/etc/hosts" "${ROOTFS}/etc/locale.conf" "${ROOTFS}/etc/locale.gen" "${ROOTFS}/etc/pacman.conf" "${ROOTFS}/etc/fstab"
-
-    # Pre-configure default automatic wired DHCP connection
-    mkdir -p -- "${ROOTFS}/etc/NetworkManager/system-connections"
-    cp -- "${DATA_DIR}/wired.nmconnection" "${ROOTFS}/etc/NetworkManager/system-connections/wired.nmconnection"
-    chmod 600 "${ROOTFS}/etc/NetworkManager/system-connections/wired.nmconnection"
+    chmod 644 "${ROOTFS}/etc/hostname" "${ROOTFS}/etc/hosts" "${ROOTFS}/etc/locale.conf" "${ROOTFS}/etc/locale.gen" "${ROOTFS}/etc/pacman.conf" "${ROOTFS}/etc/fstab" "${ROOTFS}/etc/systemd/network/20-wired.network"
 
     # Execute system setup inside chroot
     arch-chroot "${ROOTFS}" /bin/bash <<-CHROOT
 	set -euo pipefail
 
-	# Machine ID & D-Bus initialization
+	# Initialize machine-id
 	systemd-machine-id-setup
-	mkdir -p /var/lib/dbus
-	ln -sf /etc/machine-id /var/lib/dbus/machine-id
 
 	# Pacman keyring
 	pacman-key --init
 	pacman-key --populate archlinuxarm
 
-	# Timezone
+	# Timezone & Locale
 	ln -sf "/usr/share/zoneinfo/${TIMEZONE}" /etc/localtime
-
-	# Locale
 	locale-gen
 
-	# Enable services
+	# Enable native systemd networking (zero external dependencies)
+	systemctl enable systemd-networkd.service
+	systemctl enable systemd-resolved.service
+	ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+
+	# Enable SSH
 	systemctl enable sshd.service
-	systemctl enable NetworkManager.service
-	systemctl enable alarm-growfs.service
 
 	# Root password
 	printf '%s\n' "${ROOT_USER:-root}:${ROOT_PASSWORD}" | chpasswd
@@ -221,8 +208,6 @@ configure_system() {
 	printf '%s\n' "${ALARM_USER}:${ALARM_PASSWORD}" | chpasswd
 	chown -R "${ALARM_USER}:${ALARM_USER}" "/home/${ALARM_USER}"
 	chmod 700 "/home/${ALARM_USER}"
-	# Secure any other user home directories if present
-	find /home -mindepth 1 -maxdepth 1 -type d -exec chmod 700 {} +
 
 	# Clean pacman cache to reduce image size
 	pacman -Scc --noconfirm
@@ -260,43 +245,6 @@ finalize_image() {
         losetup -d "${LOOP}" 2>/dev/null || true
         LOOP=""
     fi
-
-    # ── Shrink ext4 filesystem to minimum ────────────────────────────
-    LOOP="$(losetup --find --show --partscan -- "${IMG_FILE}")"
-    ensure_loop_partitions "${LOOP}"
-    # shellcheck disable=SC2016 # Expression is intentional parameter for bash -c subshell
-    run_spin "Checking filesystem integrity" bash -c 'e2fsck -f -y "$1" >/dev/null 2>&1 || true' _ "${LOOP}p2"
-    # Reduce ext4 reserved block ratio to 1% so non-root users have immediate space
-    tune2fs -m 1 "${LOOP}p2" >/dev/null 2>&1 || true
-    # shellcheck disable=SC2016 # Expression is intentional parameter for bash -c subshell
-    run_spin "Shrinking ext4 filesystem to minimum" bash -c 'resize2fs -M "$1" >/dev/null 2>&1' _ "${LOOP}p2"
-
-    # Calculate new partition boundaries (+64MiB margin for non-root headroom)
-    local block_count block_size fs_size_bytes part2_start part2_end truncate_size
-    block_count="$(dumpe2fs -h "${LOOP}p2" 2>/dev/null | awk '/^Block count:/{print $3}')"
-    block_size="$(dumpe2fs -h "${LOOP}p2" 2>/dev/null | awk '/^Block size:/{print $3}')"
-    fs_size_bytes=$((block_count * block_size + 64 * 1024 * 1024)) # +64MiB margin
-    part2_start="$(parted -s -- "${IMG_FILE}" unit B print | awk '/^ 2/{print $2}' | tr -d 'B')"
-    part2_end=$((part2_start + fs_size_bytes))
-
-    losetup -d "${LOOP}"
-    LOOP=""
-
-    # Truncate image to shrunk size + 1MiB alignment padding
-    truncate_size=$((part2_end + 1024 * 1024))
-    truncate -s "${truncate_size}" -- "${IMG_FILE}"
-
-    # Fix partition table to match truncated image
-    parted -s -- "${IMG_FILE}" resizepart 2 "${part2_end}B" 2>/dev/null || true
-
-    # Re-attach with partition scan to verify integrity and expand filesystem to boundary
-    LOOP="$(losetup --find --show --partscan -- "${IMG_FILE}")"
-    ensure_loop_partitions "${LOOP}"
-    udevadm settle --timeout=5 2>/dev/null || sleep 1
-    e2fsck -f -y "${LOOP}p2" >/dev/null 2>&1 || true
-    resize2fs "${LOOP}p2" >/dev/null 2>&1 || true
-    losetup -d "${LOOP}"
-    LOOP=""
 
     local raw_size final_file
     raw_size="$(stat --format=%s -- "${IMG_FILE}")"
