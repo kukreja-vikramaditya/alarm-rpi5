@@ -11,6 +11,7 @@ echo "=== Unit Tests: Shell Linting & Formatting ==="
 
 TARGET_SCRIPTS=(
     "${SCRIPT_DIR}/build-alarm-rpi5.sh"
+    "${SCRIPT_DIR}/docker-build.sh"
     "${SRC_DIR}/"*.sh
     "${SCRIPT_DIR}/tests/"*.sh
 )

@@ -34,8 +34,22 @@ sudo systemctl restart systemd-binfmt.service
 
 ## Quick start
 
+### Method 1: Docker (Recommended — 100% Isolated, Zero Host Pollution)
+
+No packages or build tools need to be installed on your host system:
+
 ```bash
-git clone <this-repo> && cd alarm-rpi5
+./docker-build.sh
+```
+
+Or pass custom flags:
+```bash
+./docker-build.sh --version 1.0.0 --img-size 8G
+```
+
+### Method 2: Native Host Build
+
+```bash
 sudo ./build-alarm-rpi5.sh
 ```
 
@@ -43,10 +57,13 @@ Output lands in `dist/`. That's it.
 
 ## Project Structure
 
-The project is structured modularly with a single root entry point:
+The project is structured modularly with Docker and native entry points:
 
 ```
 alarm-rpi5/
+├── Dockerfile               # Container definition for isolated builds
+├── docker-build.sh          # One-command Docker build launcher
+├── .dockerignore            # Docker build context exclusions
 ├── build-alarm-rpi5.sh      # Primary root entry point
 ├── build.sh                 # Convenience alias symlink
 ├── data/                    # Configuration templates and static files deployed to rootfs

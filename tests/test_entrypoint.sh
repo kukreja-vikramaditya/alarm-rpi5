@@ -109,4 +109,18 @@ set -e
 assert_contains "$out" "Host Environment Diagnostics" "--no-gum check executes"
 assert_contains "$out" "UI library: gum" "--no-gum check displays UI info"
 
+# Test 11: Docker entrypoints
+assert_file_exists "${SCRIPT_DIR}/Dockerfile" "Dockerfile exists"
+assert_file_exists "${SCRIPT_DIR}/docker-build.sh" "docker-build.sh exists"
+if [[ -x "${SCRIPT_DIR}/docker-build.sh" ]]; then
+    assert_eq "0" "0" "docker-build.sh is executable"
+else
+    assert_eq "0" "1" "docker-build.sh is executable"
+fi
+if bash -n "${SCRIPT_DIR}/docker-build.sh"; then
+    assert_eq "0" "0" "docker-build.sh syntax validation (bash -n)"
+else
+    assert_eq "0" "1" "docker-build.sh syntax validation (bash -n)"
+fi
+
 test_summary "Root Entry Points"

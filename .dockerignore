@@ -1,0 +1,6 @@
+.git
+dist/
+/tmp
+*.img
+*.img.xz
+*.sha256
