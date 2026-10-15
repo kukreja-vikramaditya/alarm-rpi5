@@ -15,7 +15,8 @@ Runs in interactive wizard mode by default when attached to a terminal.
 Options:
   -c, --check              Check host environment and dependencies without building
   -i, --interactive        Run interactive configuration wizard explicitly
-  -y, --non-interactive    Bypass interactive prompts and use defaults/flags
+  -y, --non-interactive,   Bypass interactive prompts and use defaults/flags
+      --batch
   -o, --output-dir DIR     Output directory       (default: ${script_dir}/dist)
   -v, --version VER        Image version string   (default: 0.1.0)
   -s, --img-size SIZE      Raw image size         (default: 4G)

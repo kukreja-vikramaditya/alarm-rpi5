@@ -58,7 +58,17 @@ alarm-rpi5/
 │   ├── doctor.sh            # Environment diagnostics (--check) & preflight checks
 │   └── build.sh             # 5-phase image builder, pacstrap, chroot config & shrink
 ├── tests/
-│   └── test_cli.sh          # Automated test suite (45 checks)
+│   ├── run_all.sh           # Master test runner (all 9 suites)
+│   ├── test_helper.sh       # Shared assertion library and reporter
+│   ├── test_lint.sh         # ShellCheck & shfmt validation suite
+│   ├── test_ui.sh           # UI styling, badge formatting, logging tests
+│   ├── test_cleanup.sh      # Unmounts, trap handling, temp file cleanup tests
+│   ├── test_cli.sh          # Argument parsing, flags, and usage tests
+│   ├── test_config.sh       # Defaults, overrides, image path calculation tests
+│   ├── test_wizard.sh       # Interactive wizard input processing & TTY guard tests
+│   ├── test_doctor.sh       # Dependency checks, package mappings, preflight tests
+│   ├── test_build.sh        # Boot configuration, fstab, pacman generation tests
+│   └── test_entrypoint.sh   # Root entry points, CLI dispatch, non-root checks
 └── dist/                    # Default output directory for generated images (.img.xz)
 ```
 
@@ -70,7 +80,8 @@ sudo ./build-alarm-rpi5.sh [OPTIONS]
 Options:
   -c, --check              Check host environment and dependencies without building
   -i, --interactive        Run interactive configuration wizard (default on TTY)
-  -y, --non-interactive    Bypass interactive prompts and use defaults/flags
+  -y, --non-interactive,   Bypass interactive prompts and use defaults/flags
+      --batch
   -o, --output-dir DIR     Output directory       (default: ./dist)
   -v, --version VER        Image version string   (default: 0.1.0)
   -s, --img-size SIZE      Raw image size         (default: 4G)
@@ -191,13 +202,15 @@ The image ships with a minimal set of packages:
 ```
 x86_64 Host
     │
-    ├─ truncate + parted → raw .img with MBR (FAT32 boot + ext4 root)
+    ├─ Pre-flight sudo check & cleanup of stale mounts/loops
+    ├─ truncate + parted → raw .img with GPT (FAT32 boot ESP + ext4 root)
     ├─ losetup --partscan → attach as /dev/loopNpX
     ├─ qemu-user-static + binfmt_misc → transparent aarch64 emulation
-    ├─ pacstrap → install ALARM packages into the image
+    ├─ pacstrap → install ALARM packages into isolated /tmp/alarm-rootfs.*
     ├─ arch-chroot → configure locale, users, services, keyring
-    ├─ resize2fs -M → shrink ext4 to minimum
-    └─ xz -9 → compress for distribution
+    ├─ resize2fs -M + truncate → shrink ext4 filesystem and disk image to minimum
+    ├─ xz -9 → compress for distribution
+    └─ Print final image path and purge temporary mounts/files
 ```
 
 No U-Boot (Pi 5 can't use it). The boot chain is:
@@ -245,7 +258,7 @@ make ARCH=arm64 -j$(nproc) Image modules dtbs
 
 ## Testing
 
-Run all unit and integration test suites (over 200 automated checks across every module):
+Run all unit and integration test suites (9 suites, 205 automated checks across every module):
 
 ```bash
 ./tests/run_all.sh
@@ -254,6 +267,7 @@ Run all unit and integration test suites (over 200 automated checks across every
 Or run test suites for individual components directly:
 
 ```bash
+./tests/test_lint.sh        # Shell linting & formatting (shellcheck & shfmt)
 ./tests/test_ui.sh          # src/ui.sh (styling, logging, badges, spinners)
 ./tests/test_cleanup.sh     # src/cleanup.sh (unmounts, signal traps, temp cleanup)
 ./tests/test_cli.sh         # src/cli.sh (argument parsing, flags, usage)
