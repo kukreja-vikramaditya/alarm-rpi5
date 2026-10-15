@@ -206,7 +206,9 @@ finalize_image() {
     log_phase "Phase 5/5 — Finalize image"
 
     # Remove qemu binary (not needed on real hardware)
-    rm -f -- "${ROOTFS}/usr/bin/qemu-aarch64-static"
+    if [[ -n "${ROOTFS:-}" && -f "${ROOTFS}/usr/bin/qemu-aarch64-static" ]]; then
+        rm -f -- "${ROOTFS}/usr/bin/qemu-aarch64-static"
+    fi
 
     # Sync and unmount cleanly with fallback
     sync
