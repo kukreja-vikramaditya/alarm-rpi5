@@ -168,9 +168,20 @@ TARGET_HOSTNAME=mypi TIMEZONE=Asia/Kolkata ALARM_USER=vikram ALARM_PASSWORD=secr
   sudo ./build-alarm-rpi5.sh
 ```
 
-## Environment variables
+## Configuration & Environment Variables
 
-All config has sensible defaults. Flags take precedence over environment variables.
+All settings have sensible defaults. Precedence order: **CLI Flags > `alarm.conf` > Environment Variables > Defaults**.
+
+### Configuration File (`alarm.conf`)
+
+You can configure all options declaratively in an `alarm.conf` file:
+
+```bash
+cp alarm.conf.example alarm.conf
+nano alarm.conf
+```
+
+### Supported Settings
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -183,11 +194,12 @@ All config has sensible defaults. Flags take precedence over environment variabl
 | `ROOT_PASSWORD` | `root` | Root password |
 | `ALARM_USER` | `alarm` | Non-root user (wheel group) |
 | `ALARM_PASSWORD` | `alarm` | Non-root user password |
-| `TIMEZONE` | `UTC` | System timezone |
+| `TIMEZONE` | `Asia/Kolkata` | System timezone |
 | `LOCALE` | `en_US.UTF-8` | System locale |
 | `EXTRA_PACKAGES` | *(empty)* | Space-separated list of extra pacman packages |
 | `ALARM_MIRROR` | `http://mirror.archlinuxarm.org` | ALARM mirror URL |
 | `COMPRESS` | `1` | Set to `0` to skip xz compression |
+
 
 ## Flashing
 

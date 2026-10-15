@@ -1,0 +1,59 @@
+# ==============================================================================
+# alarm.conf.example — Arch Linux ARM Raspberry Pi 5 Image Builder Configuration
+# ==============================================================================
+# Copy this file to 'alarm.conf' in the repository root to override defaults:
+#   cp alarm.conf.example alarm.conf
+#
+# Values in alarm.conf override defaults. Command-line flags take top precedence.
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. System Identity & Hostname
+# ------------------------------------------------------------------------------
+TARGET_HOSTNAME="raspberrypi"
+VERSION="0.1.0"
+
+# ------------------------------------------------------------------------------
+# 2. User Credentials & Accounts
+# ------------------------------------------------------------------------------
+# Root administrative account
+ROOT_USER="root"
+ROOT_PASSWORD="root"
+
+# Non-root user (automatically added to 'wheel' group for sudo privileges)
+ALARM_USER="alarm"
+ALARM_PASSWORD="alarm"
+
+# ------------------------------------------------------------------------------
+# 3. Localization & Time
+# ------------------------------------------------------------------------------
+TIMEZONE="Asia/Kolkata"
+LOCALE="en_US.UTF-8"
+
+# ------------------------------------------------------------------------------
+# 4. Packages
+# ------------------------------------------------------------------------------
+# Additional packages to install into rootfs via pacman (space-separated).
+# Base packages already installed: base, linux-rpi, firmware-raspberrypi,
+# raspberrypi-bootloader, archlinuxarm-keyring, openssh, sudo, nano,
+# networkmanager, iwd.
+# Example: EXTRA_PACKAGES="git htop neovim tmux curl wget bash-completion"
+EXTRA_PACKAGES=""
+
+# ------------------------------------------------------------------------------
+# 5. Disk & Filesystem Layout
+# ------------------------------------------------------------------------------
+# Raw disk image size before shrinking (4G, 8G, 16G, etc.)
+IMG_SIZE="4G"
+
+# Boot partition size in MiB (FAT32 EFI/boot)
+BOOT_SIZE_MIB="256"
+
+# Compress image using xz -9 (1 = enabled, 0 = disabled raw .img)
+COMPRESS="1"
+
+# Output directory for generated images
+OUTPUT_DIR="./dist"
+
+# ALARM package repository mirror
+ALARM_MIRROR="http://mirror.archlinuxarm.org"

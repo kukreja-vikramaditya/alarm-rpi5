@@ -16,13 +16,22 @@ umask 0077
 # Defaults
 BUILD_DATE="$(date +%Y%m%d)"
 BOOT_SIZE_MIB="${BOOT_SIZE_MIB:-256}"
-TIMEZONE="${TIMEZONE:-UTC}"
+TIMEZONE="${TIMEZONE:-Asia/Kolkata}"
 LOCALE="${LOCALE:-en_US.UTF-8}"
 EXTRA_PACKAGES="${EXTRA_PACKAGES:-}"
 ALARM_MIRROR="${ALARM_MIRROR:-http://mirror.archlinuxarm.org}"
 CUSTOM_IMG_NAME="${IMG_NAME:-}"
 if [[ -z "${DATA_DIR:-}" ]]; then
     DATA_DIR="${SCRIPT_DIR:-.}/data"
+fi
+
+# Optional configuration file override (alarm.conf)
+if [[ -n "${SCRIPT_DIR:-}" && -f "${SCRIPT_DIR}/alarm.conf" ]]; then
+    # shellcheck source=/dev/null
+    source "${SCRIPT_DIR}/alarm.conf"
+elif [[ -f "./alarm.conf" ]]; then
+    # shellcheck source=/dev/null
+    source "./alarm.conf"
 fi
 
 init_config() {
