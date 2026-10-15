@@ -29,7 +29,10 @@ ensure_loop_partitions() {
 # Phase 1: Create disk image & partitions
 # ──────────────────────────────────────────────────────────────────────
 create_image() {
-    log_phase "Phase 1/5 — Create disk image (${IMG_SIZE})"
+    log_phase "Phase 1/5 — Clean previous attempts & create disk image (${IMG_SIZE})"
+
+    # Clean up lingering resources from any previous installation attempts
+    cleanup_previous_run
 
     # Ensure /dev/loop-control and loop device nodes exist in minimal container environments
     if [[ ! -c /dev/loop-control ]]; then
@@ -203,7 +206,7 @@ CHROOT
 # Phase 5: Finalize & package
 # ──────────────────────────────────────────────────────────────────────
 finalize_image() {
-    log_phase "Phase 5/5 — Finalize image"
+    log_phase "Phase 5/5 — Finalize image & clean up temporary installation files"
 
     # Remove qemu binary (not needed on real hardware)
     if [[ -n "${ROOTFS:-}" && -f "${ROOTFS}/usr/bin/qemu-aarch64-static" ]]; then

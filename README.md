@@ -267,15 +267,16 @@ The image ships with a minimal set of packages:
 ```
 x86_64 Host
     │
-    ├─ Pre-flight sudo check & cleanup of stale mounts/loops
-    ├─ truncate + parted → raw .img with GPT (FAT32 boot ESP + ext4 root)
+    ├─ Pre-flight sudo check & automatic cleanup of previous installation attempts (stale mounts/loops/debris)
+    ├─ Phase 1: Clean previous attempts & create disk image with GPT (FAT32 boot ESP + ext4 root)
     ├─ losetup --partscan → attach as /dev/loopNpX
     ├─ qemu-user-static + binfmt_misc → transparent aarch64 emulation
-    ├─ pacstrap → install ALARM packages into isolated /tmp/alarm-rootfs.*
-    ├─ arch-chroot → configure locale, users, services, keyring
-    ├─ resize2fs -M + truncate → shrink ext4 filesystem and disk image to minimum
+    ├─ Phase 2: pacstrap → install ALARM packages into isolated /tmp/alarm-rootfs.*
+    ├─ Phase 3: configure bootloader (config.txt, cmdline.txt, fstab)
+    ├─ Phase 4: arch-chroot → configure locale, users, services, keyring
+    ├─ Phase 5: resize2fs -M + truncate → shrink ext4 filesystem and disk image to minimum
     ├─ xz -9 → compress for distribution
-    └─ Print final image path and purge temporary mounts/files
+    └─ Finalize image, print output path, and clean up temporary installation files/mounts
 ```
 
 No U-Boot (Pi 5 can't use it). The boot chain is:

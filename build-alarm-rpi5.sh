@@ -131,6 +131,7 @@ main() {
     start_time="$(date +%s)"
 
     # 10. Execute 5-phase build pipeline
+    log_info "Initiating 5-phase build pipeline (with automatic cleanup of previous installation attempts)..."
     create_image
     bootstrap_rootfs
     configure_boot

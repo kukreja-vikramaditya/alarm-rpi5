@@ -12,6 +12,8 @@ FINAL_BUILT_FILE="" # Set on successful completion
 # Clean up lingering resources from any previous interrupted runs
 # ──────────────────────────────────────────────────────────────────────
 cleanup_previous_run() {
+    log_info "Cleaning up any existing installation attempts, mounts, and loop devices..."
+
     # 1. Unmount any stale mounts inside /tmp/alarm-rootfs* (root only, unmount nested /boot first)
     if [[ $EUID -eq 0 && -f /proc/mounts ]] && grep -q "/tmp/alarm-rootfs" /proc/mounts 2>/dev/null; then
         local mp
