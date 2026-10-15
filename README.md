@@ -359,7 +359,7 @@ To run diagnostic checks on your host system without building:
 A GitHub Actions workflow ([`.github/workflows/build.yml`](.github/workflows/build.yml)) automates testing, image building, and distribution:
 
 1. **Lint & Test**: On every push and pull request, ShellCheck, `shfmt`, and all 10 unit test suites run automatically.
-2. **Build**: On every commit to `main` or `master` (or manual `workflow_dispatch`), an Arch Linux container runs the batch build pipeline using QEMU ARM64 binfmt emulation.
+2. **Build**: On every commit to `main` (or manual `workflow_dispatch`), an Arch Linux container runs the batch build pipeline using QEMU ARM64 binfmt emulation.
 3. **Publish**:
    - Generates SHA-256 checksums (`SHA256SUMS`).
    - Attaches the compressed `.img.xz` artifact to the workflow run.
