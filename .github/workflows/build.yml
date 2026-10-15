@@ -28,9 +28,10 @@ jobs:
       - name: Run test suites inside Arch Linux container (10 suites)
         run: |
           docker run --rm \
+            --entrypoint ./tests/run_all.sh \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -w /workspace \
-            alarm-rpi5-builder ./tests/run_all.sh
+            alarm-rpi5-builder
 
   build:
     name: Build & Publish Image
