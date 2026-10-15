@@ -69,7 +69,6 @@ jobs:
           docker run --rm --privileged \
             -v /dev:/dev \
             -v /sys:/sys \
-            -v /proc/sys/fs/binfmt_misc:/proc/sys/fs/binfmt_misc \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -w /workspace \
             alarm-rpi5-builder -y 2>&1 | tee image-build.log

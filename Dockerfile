@@ -8,7 +8,8 @@ RUN sed -i 's/^#DisableSandbox/DisableSandbox/' /etc/pacman.conf || true && \
         'Server = https://mirror.rackspace.com/archlinux/$repo/os/$arch' \
         'Server = https://mirrors.kernel.org/archlinux/$repo/os/$arch' \
         > /etc/pacman.d/mirrorlist && \
-    pacman -Sy --noconfirm archlinux-keyring && \
+    pacman-key --init && \
+    pacman-key --populate archlinux && \
     pacman -Syu --noconfirm --needed \
         arch-install-scripts \
         dosfstools \
@@ -20,7 +21,7 @@ RUN sed -i 's/^#DisableSandbox/DisableSandbox/' /etc/pacman.conf || true && \
         curl \
         qemu-user-static \
         qemu-user-static-binfmt && \
-    pacman -Scc --noconfirm
+    rm -rf /var/cache/pacman/pkg/*
 
 WORKDIR /workspace
 
