@@ -53,7 +53,7 @@ interactive_wizard_gum() {
     echo ""
 
     if ! "$GUM_BIN" confirm "🚀 Start building with these settings?"; then
-        echo "Build cancelled by user."
+        "$GUM_BIN" log -l warn "Build cancelled by user."
         exit 0
     fi
 }
@@ -112,7 +112,7 @@ SUMMARY
 
     read -r -p "🚀 Start building with these settings? (y/n) [y]: " in_confirm
     if [[ "$in_confirm" =~ ^[Nn] ]]; then
-        echo "Build cancelled by user."
+        "$GUM_BIN" log -l warn "Build cancelled by user."
         exit 0
     fi
 }

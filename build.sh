@@ -119,7 +119,7 @@ main() {
                 fi
                 rm -f -- "${IMG_FILE}" "${IMG_FILE}.xz"
             else
-                echo "Build cancelled by user (will not overwrite existing output)."
+                log_warn "Build cancelled by user (will not overwrite existing output)."
                 exit 0
             fi
         else
@@ -144,10 +144,13 @@ main() {
     log_info "Total build time: $((elapsed / 60))m $((elapsed % 60))s"
 
     echo ""
-    echo "================================================================"
-    echo "BUILT IMAGE PATH:"
-    echo "${FINAL_BUILT_FILE}"
-    echo "================================================================"
+    "$GUM_BIN" style \
+        --border rounded \
+        --border-foreground 42 \
+        --padding "1 2" \
+        --bold \
+        "🎉 Build Complete!" \
+        "📦 Built image: ${FINAL_BUILT_FILE}"
     echo ""
 }
 

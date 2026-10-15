@@ -35,19 +35,19 @@ _format_log_msg() {
 log_info() {
     local _LOG_MSG
     _format_log_msg "$@"
-    printf '  %s %s\n' "$("$GUM_BIN" style --foreground 39 "ℹ")" "$_LOG_MSG"
+    "$GUM_BIN" log -l info "$_LOG_MSG"
 }
 
 log_warn() {
     local _LOG_MSG
     _format_log_msg "$@"
-    printf '  %s %s\n' "$("$GUM_BIN" style --foreground 214 "⚠")" "$_LOG_MSG" >&2
+    "$GUM_BIN" log -l warn "$_LOG_MSG"
 }
 
 log_error() {
     local _LOG_MSG
     _format_log_msg "$@"
-    printf '  %s %s\n' "$("$GUM_BIN" style --foreground 196 --bold "✖")" "$_LOG_MSG" >&2
+    "$GUM_BIN" log -l error "$_LOG_MSG"
 }
 
 log_phase() {
