@@ -52,6 +52,8 @@ fi
 output="$("$BIN" --help 2>&1 || true)"
 assert_contains "$output" "Usage: sudo ./build-alarm-rpi5.sh" "Flag --help displays usage"
 assert_contains "$output" "--check" "Flag --help lists --check"
+assert_contains "$output" "--interactive" "Flag --help lists --interactive"
+assert_contains "$output" "--no-gum" "Flag --help lists --no-gum"
 
 # Test 3: -h flag behaves identically
 output="$("$BIN" -h 2>&1 || true)"
@@ -91,7 +93,23 @@ set -e
 assert_contains "$output" "Host Environment Diagnostics" "--check header present"
 assert_contains "$output" "ALARM mirror reachable" "--check tests mirror connectivity"
 
-# Test 8: Repository structure checks
+# Test 8: --no-gum flag functions correctly in check mode
+set +e
+output="$("$BIN" --check --no-gum 2>&1)"
+code=$?
+set -e
+assert_contains "$output" "Host Environment Diagnostics" "--no-gum check executes"
+assert_contains "$output" "UI library: gum" "--no-gum check displays UI info"
+
+# Test 9: --interactive without a terminal exits cleanly with message
+set +e
+output="$("$BIN" --interactive 2>&1)"
+code=$?
+set -e
+assert_eq "1" "$code" "--interactive without tty exits with code 1"
+assert_contains "$output" "requires 'gum' and a terminal" "--interactive non-tty message"
+
+# Test 10: Repository structure checks
 [[ -f "${SCRIPT_DIR}/README.md" ]] && assert_eq "0" "0" "README.md exists" || assert_eq "0" "1" "README.md exists"
 [[ -f "${SCRIPT_DIR}/LICENSE" ]] && assert_eq "0" "0" "LICENSE exists" || assert_eq "0" "1" "LICENSE exists"
 [[ -x "$BIN" ]] && assert_eq "0" "0" "build script is executable" || assert_eq "0" "1" "build script is executable"

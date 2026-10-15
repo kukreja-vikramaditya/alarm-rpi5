@@ -27,7 +27,7 @@ sudo pacman -S --needed \
   qemu-user-static qemu-user-static-binfmt \
   arch-install-scripts \
   dosfstools e2fsprogs \
-  parted xz
+  parted xz gum
 
 sudo systemctl restart systemd-binfmt.service
 ```
@@ -48,11 +48,13 @@ sudo ./build-alarm-rpi5.sh [OPTIONS]
 
 Options:
   -c, --check            Check host environment and dependencies without building
+  -i, --interactive      Run interactive configuration wizard (powered by gum)
   -o, --output-dir DIR   Output directory       (default: ./dist)
   -v, --version VER      Image version string   (default: 0.1.0)
   -s, --img-size SIZE    Raw image size         (default: 4G)
       --hostname NAME    Target hostname        (default: alarm-rpi5)
       --no-compress      Skip xz compression
+      --no-gum           Disable Gum styling and interactive elements
   -h, --help             Show help
 ```
 
@@ -61,6 +63,9 @@ Options:
 ```bash
 # Check if host environment has required tools & setup
 ./build-alarm-rpi5.sh --check
+
+# Interactive setup wizard with gum (inputs, selectors, password prompts)
+sudo ./build-alarm-rpi5.sh -i
 
 # Default build
 sudo ./build-alarm-rpi5.sh

@@ -31,13 +31,102 @@ readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && 
 readonly SCRIPT_NAME="$(basename -- "${BASH_SOURCE[0]}")"
 
 # ──────────────────────────────────────────────────────────────────────
-# Logging
+# Gum detection & UI styling (optional progressive enhancement)
+# ──────────────────────────────────────────────────────────────────────
+find_gum_binary() {
+    if command -v gum &>/dev/null; then
+        command -v gum
+        return 0
+    fi
+    local candidates=(
+        "/usr/bin/gum"
+        "/usr/local/bin/gum"
+    )
+    if [[ -n "${SUDO_USER:-}" ]]; then
+        candidates+=(
+            "/home/${SUDO_USER}/.local/bin/gum"
+            "/home/${SUDO_USER}/go/bin/gum"
+        )
+    fi
+    candidates+=(
+        "${HOME:-}/.local/bin/gum"
+        "${HOME:-}/go/bin/gum"
+    )
+    for c in "${candidates[@]}"; do
+        if [[ -x "$c" ]]; then
+            echo "$c"
+            return 0
+        fi
+    done
+    return 1
+}
+
+GUM_BIN="$(find_gum_binary 2>/dev/null || true)"
+USE_GUM=0
+if [[ -n "${GUM_BIN}" && -t 1 ]]; then
+    USE_GUM=1
+fi
+
+# ──────────────────────────────────────────────────────────────────────
+# Logging (Plain text or Gum styled)
 # ──────────────────────────────────────────────────────────────────────
 _log()  { printf '[%s] [%-5s] %s\n' "$(date '+%H:%M:%S')" "$1" "$2"; }
-log_info()  { _log "INFO"  "$*"; }
-log_warn()  { _log "WARN"  "$*" >&2; }
-log_error() { _log "ERROR" "$*" >&2; }
-log_phase() { printf '\n[%s] === %s ===\n' "$(date '+%H:%M:%S')" "$*"; }
+
+log_info() {
+    if [[ "${USE_GUM:-0}" -eq 1 ]]; then
+        printf '  %s %s\n' "$("$GUM_BIN" style --foreground 39 "ℹ")" "$*"
+    else
+        _log "INFO" "$*"
+    fi
+}
+
+log_warn() {
+    if [[ "${USE_GUM:-0}" -eq 1 ]]; then
+        printf '  %s %s\n' "$("$GUM_BIN" style --foreground 214 "⚠")" "$*" >&2
+    else
+        _log "WARN" "$*" >&2
+    fi
+}
+
+log_error() {
+    if [[ "${USE_GUM:-0}" -eq 1 ]]; then
+        printf '  %s %s\n' "$("$GUM_BIN" style --foreground 196 --bold "✖")" "$*" >&2
+    else
+        _log "ERROR" "$*" >&2
+    fi
+}
+
+log_phase() {
+    if [[ "${USE_GUM:-0}" -eq 1 ]]; then
+        printf '\n'
+        "$GUM_BIN" style --bold --foreground 212 "==> $*"
+    else
+        printf '\n[%s] === %s ===\n' "$(date '+%H:%M:%S')" "$*"
+    fi
+}
+
+gum_banner() {
+    if [[ "${USE_GUM:-0}" -eq 1 ]]; then
+        "$GUM_BIN" style \
+            --border rounded \
+            --border-foreground 212 \
+            --padding "1 2" \
+            --bold \
+            "Arch Linux ARM for Raspberry Pi 5" \
+            "Clean, Repeatable Image Builder"
+        echo ""
+    fi
+}
+
+run_spin() {
+    local title="$1"; shift
+    if [[ "${USE_GUM:-0}" -eq 1 ]]; then
+        "$GUM_BIN" spin --spinner dot --title "$title" -- "$@"
+    else
+        log_info "$title..."
+        "$@"
+    fi
+}
 
 die() {
     log_error "$@"
@@ -55,11 +144,13 @@ Build an Arch Linux ARM image for Raspberry Pi 5.
 
 Options:
   -c, --check            Check host environment and dependencies without building
+  -i, --interactive      Run interactive configuration wizard (powered by gum)
   -o, --output-dir DIR   Output directory       (default: ${SCRIPT_DIR}/dist)
   -v, --version VER      Image version string   (default: 0.1.0)
   -s, --img-size SIZE    Raw image size         (default: 4G)
       --hostname NAME    Target hostname        (default: alarm-rpi5)
       --no-compress      Skip xz compression
+      --no-gum           Disable Gum styling and interactive elements
   -h, --help             Show this help
 
 Environment overrides (lower precedence than flags):
@@ -69,6 +160,7 @@ Environment overrides (lower precedence than flags):
 
 Examples:
   ./${SCRIPT_NAME} --check
+  ./${SCRIPT_NAME} -i
   sudo ./${SCRIPT_NAME}
   sudo ./${SCRIPT_NAME} -o /mnt/build -v 1.0.0
   EXTRA_PACKAGES="git htop" sudo ./${SCRIPT_NAME}
@@ -79,6 +171,7 @@ USAGE
 # Argument parsing
 # ──────────────────────────────────────────────────────────────────────
 _arg_check=""
+_arg_interactive=""
 _arg_output_dir=""
 _arg_version=""
 _arg_img_size=""
@@ -89,6 +182,10 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         -c|--check)
             _arg_check=1; shift ;;
+        -i|--interactive)
+            _arg_interactive=1; shift ;;
+        --no-gum)
+            USE_GUM=0; shift ;;
         -o|--output-dir)
             [[ -n "${2:-}" ]] || die "Missing argument for $1"
             _arg_output_dir="$2"; shift 2 ;;
@@ -117,10 +214,10 @@ done
 # ──────────────────────────────────────────────────────────────────────
 # Configuration — flags > environment > defaults
 # ──────────────────────────────────────────────────────────────────────
-readonly IMG_SIZE="${_arg_img_size:-${IMG_SIZE:-4G}}"
-readonly VERSION="${_arg_version:-${VERSION:-0.1.0}}"
+IMG_SIZE="${_arg_img_size:-${IMG_SIZE:-4G}}"
+VERSION="${_arg_version:-${VERSION:-0.1.0}}"
 readonly BUILD_DATE="$(date +%Y%m%d)"
-readonly IMG_NAME="${IMG_NAME:-alarm-rpi5-${VERSION}-${BUILD_DATE}}"
+IMG_NAME="${IMG_NAME:-alarm-rpi5-${VERSION}-${BUILD_DATE}}"
 
 _output_dir="${_arg_output_dir:-${SCRIPT_DIR}/dist}"
 _output_dir="$(mkdir -p -- "$_output_dir" && cd -- "$_output_dir" && pwd)"
@@ -128,23 +225,22 @@ readonly OUTPUT_DIR="$_output_dir"
 unset _output_dir
 
 readonly BOOT_SIZE_MIB="${BOOT_SIZE_MIB:-256}"
-readonly TARGET_HOSTNAME="${_arg_hostname:-${TARGET_HOSTNAME:-alarm-rpi5}}"
-readonly ROOT_PASSWORD="${ROOT_PASSWORD:-root}"
-readonly ALARM_USER="${ALARM_USER:-alarm}"
-readonly ALARM_PASSWORD="${ALARM_PASSWORD:-alarm}"
+TARGET_HOSTNAME="${_arg_hostname:-${TARGET_HOSTNAME:-alarm-rpi5}}"
+ROOT_PASSWORD="${ROOT_PASSWORD:-root}"
+ALARM_USER="${ALARM_USER:-alarm}"
+ALARM_PASSWORD="${ALARM_PASSWORD:-alarm}"
 readonly TIMEZONE="${TIMEZONE:-UTC}"
 readonly LOCALE="${LOCALE:-en_US.UTF-8}"
 readonly EXTRA_PACKAGES="${EXTRA_PACKAGES:-}"
 readonly ALARM_MIRROR="${ALARM_MIRROR:-http://mirror.archlinuxarm.org}"
 
 if [[ -n "$_arg_no_compress" ]]; then
-    readonly COMPRESS=0
+    COMPRESS=0
 else
-    readonly COMPRESS="${COMPRESS:-1}"
+    COMPRESS="${COMPRESS:-1}"
 fi
 
-# Derived paths
-readonly IMG_FILE="${OUTPUT_DIR}/${IMG_NAME}.img"
+IMG_FILE="${OUTPUT_DIR}/${IMG_NAME}.img"
 ROOTFS=""     # Set in main body; needs to be mutable for cleanup
 PACMAN_CONF="" # Set in main body
 LOOP=""        # Set in main body; loopback device, mutable
@@ -215,6 +311,81 @@ get_pkg_for_cmd() {
     esac
 }
 
+format_badge() {
+    local type="$1"
+    if [[ "${USE_GUM:-0}" -eq 1 ]]; then
+        case "$type" in
+            OK)      "$GUM_BIN" style --foreground 42 --bold "[  OK  ]" ;;
+            MISSING) "$GUM_BIN" style --foreground 196 --bold "[MISSING]" ;;
+            WARN)    "$GUM_BIN" style --foreground 214 "[ WARN ]" ;;
+            INFO)    "$GUM_BIN" style --foreground 39 "[ INFO ]" ;;
+            *)       printf '[%s]' "$type" ;;
+        esac
+    else
+        case "$type" in
+            OK)      printf '[  OK  ]' ;;
+            MISSING) printf '[MISSING]' ;;
+            WARN)    printf '[ WARN ]' ;;
+            INFO)    printf '[ INFO ]' ;;
+            *)       printf '[%s]' "$type" ;;
+        esac
+    fi
+}
+
+# ──────────────────────────────────────────────────────────────────────
+# Interactive Wizard (gum)
+# ──────────────────────────────────────────────────────────────────────
+interactive_wizard() {
+    if [[ "${USE_GUM:-0}" -ne 1 ]]; then
+        die "Interactive mode requires 'gum' and a terminal. Install with: sudo pacman -S gum"
+    fi
+
+    gum_banner
+    "$GUM_BIN" style --bold --underline "Interactive Configuration Wizard"
+    echo ""
+
+    VERSION="$("$GUM_BIN" input --header "Image Version" --value "${VERSION}")"
+    TARGET_HOSTNAME="$("$GUM_BIN" input --header "Target Hostname" --value "${TARGET_HOSTNAME}")"
+    ALARM_USER="$("$GUM_BIN" input --header "Non-Root Username" --value "${ALARM_USER}")"
+
+    local new_root
+    new_root="$("$GUM_BIN" input --password --header "Root Password (leave empty for default: ${ROOT_PASSWORD})")"
+    [[ -n "$new_root" ]] && ROOT_PASSWORD="$new_root"
+
+    local new_user
+    new_user="$("$GUM_BIN" input --password --header "${ALARM_USER} Password (leave empty for default: ${ALARM_PASSWORD})")"
+    [[ -n "$new_user" ]] && ALARM_PASSWORD="$new_user"
+
+    IMG_SIZE="$("$GUM_BIN" choose --header "Select raw disk image size:" "4G" "8G" "16G" "32G")"
+
+    local comp_sel
+    comp_sel="$("$GUM_BIN" choose --header "XZ Compression:" "Enabled (.img.xz - smaller, recommended)" "Disabled (.img - raw)")"
+    if [[ "$comp_sel" == *"Disabled"* ]]; then
+        COMPRESS=0
+    else
+        COMPRESS=1
+    fi
+
+    IMG_NAME="alarm-rpi5-${VERSION}-${BUILD_DATE}"
+    IMG_FILE="${OUTPUT_DIR}/${IMG_NAME}.img"
+
+    echo ""
+    "$GUM_BIN" style --border normal --padding "1 2" \
+        "Build Summary:" \
+        "  Version:     ${VERSION}" \
+        "  Hostname:    ${TARGET_HOSTNAME}" \
+        "  User:        ${ALARM_USER}" \
+        "  Image Size:  ${IMG_SIZE}" \
+        "  Compressed:  $(( COMPRESS ? 1 : 0 )) (xz)" \
+        "  Output Path: ${OUTPUT_DIR}/"
+    echo ""
+
+    if ! "$GUM_BIN" confirm "Start building with these settings?"; then
+        echo "Build cancelled by user."
+        exit 0
+    fi
+}
+
 # ──────────────────────────────────────────────────────────────────────
 # Environment check / diagnostic mode (--check)
 # ──────────────────────────────────────────────────────────────────────
@@ -224,53 +395,60 @@ check_environment() {
 
     # 1. Root / Privileges
     if [[ $EUID -eq 0 ]]; then
-        printf '  %-32s [%s]\n' "Root execution" "OK"
+        printf '  %-32s %s\n' "Root execution" "$(format_badge OK)"
     elif sudo -n true 2>/dev/null; then
-        printf '  %-32s [%s] (passwordless sudo available)\n' "Root execution" "OK"
+        printf '  %-32s %s (passwordless sudo available)\n' "Root execution" "$(format_badge OK)"
     else
-        printf '  %-32s [%s] (requires sudo password when building)\n' "Root execution" "INFO"
+        printf '  %-32s %s (requires sudo password when building)\n' "Root execution" "$(format_badge INFO)"
     fi
 
     # 2. Required external commands
     for cmd in "${REQUIRED_CMDS[@]}"; do
         if command -v "$cmd" &>/dev/null; then
-            printf '  %-32s [%s] (%s)\n' "Tool: $cmd" "OK" "$(command -v "$cmd")"
+            printf '  %-32s %s (%s)\n' "Tool: $cmd" "$(format_badge OK)" "$(command -v "$cmd")"
         else
-            printf '  %-32s [%s] -> install with: %s\n' "Tool: $cmd" "MISSING" "$(get_pkg_for_cmd "$cmd")"
+            printf '  %-32s %s -> install with: %s\n' "Tool: $cmd" "$(format_badge MISSING)" "$(get_pkg_for_cmd "$cmd")"
             ((issues++)) || true
         fi
     done
 
     # 3. binfmt_misc emulation
     if [[ -f /proc/sys/fs/binfmt_misc/qemu-aarch64 ]]; then
-        printf '  %-32s [%s]\n' "binfmt: qemu-aarch64" "OK"
+        printf '  %-32s %s\n' "binfmt: qemu-aarch64" "$(format_badge OK)"
     else
-        printf '  %-32s [%s] -> enable with: sudo systemctl restart systemd-binfmt.service\n' "binfmt: qemu-aarch64" "MISSING"
+        printf '  %-32s %s -> enable with: sudo systemctl restart systemd-binfmt.service\n' "binfmt: qemu-aarch64" "$(format_badge MISSING)"
         ((issues++)) || true
     fi
 
     # 4. static qemu binary
     if [[ -f /usr/bin/qemu-aarch64-static ]]; then
-        printf '  %-32s [%s]\n' "Binary: qemu-aarch64-static" "OK"
+        printf '  %-32s %s\n' "Binary: qemu-aarch64-static" "$(format_badge OK)"
     else
-        printf '  %-32s [%s] -> install with: sudo pacman -S qemu-user-static qemu-user-static-binfmt\n' "Binary: qemu-aarch64-static" "MISSING"
+        printf '  %-32s %s -> install with: sudo pacman -S qemu-user-static qemu-user-static-binfmt\n' "Binary: qemu-aarch64-static" "$(format_badge MISSING)"
         ((issues++)) || true
     fi
 
     # 5. ALARM mirror reachable
     if command -v curl &>/dev/null; then
         if curl -sI --max-time 5 "${ALARM_MIRROR}" &>/dev/null; then
-            printf '  %-32s [%s] (%s)\n' "ALARM mirror reachable" "OK" "${ALARM_MIRROR}"
+            printf '  %-32s %s (%s)\n' "ALARM mirror reachable" "$(format_badge OK)" "${ALARM_MIRROR}"
         else
-            printf '  %-32s [%s] (%s unreachable)\n' "ALARM mirror reachable" "WARN" "${ALARM_MIRROR}"
+            printf '  %-32s %s (%s unreachable)\n' "ALARM mirror reachable" "$(format_badge WARN)" "${ALARM_MIRROR}"
         fi
     fi
 
     # 6. Output directory writable
     if [[ -d "${OUTPUT_DIR}" && -w "${OUTPUT_DIR}" ]]; then
-        printf '  %-32s [%s] (%s)\n' "Output dir writable" "OK" "${OUTPUT_DIR}"
+        printf '  %-32s %s (%s)\n' "Output dir writable" "$(format_badge OK)" "${OUTPUT_DIR}"
     else
-        printf '  %-32s [%s] (%s)\n' "Output dir writable" "WARN" "${OUTPUT_DIR}"
+        printf '  %-32s %s (%s)\n' "Output dir writable" "$(format_badge WARN)" "${OUTPUT_DIR}"
+    fi
+
+    # 7. Optional UI enhancement
+    if [[ -n "${GUM_BIN}" ]]; then
+        printf '  %-32s %s (%s)\n' "UI library: gum" "$(format_badge OK)" "${GUM_BIN}"
+    else
+        printf '  %-32s %s (optional for styled UI & wizard: sudo pacman -S gum)\n' "UI library: gum" "$(format_badge INFO)"
     fi
 
     echo ""
@@ -333,8 +511,8 @@ create_image() {
     # Wait for partition device nodes to appear
     udevadm settle --timeout=5 2>/dev/null || sleep 2
 
-    mkfs.vfat -F32 -n BOOT "${LOOP}p1" >/dev/null
-    mkfs.ext4 -L ROOT -F -q "${LOOP}p2" >/dev/null
+    run_spin "Formatting boot partition (FAT32)" mkfs.vfat -F32 -n BOOT "${LOOP}p1"
+    run_spin "Formatting root partition (ext4)" mkfs.ext4 -L ROOT -F -q "${LOOP}p2"
 
     log_info "Partitions created: ${BOOT_SIZE_MIB}MiB FAT32 boot + ext4 root"
 }
@@ -531,11 +709,9 @@ finalize_image() {
     LOOP=""
 
     # ── Shrink ext4 filesystem to minimum ────────────────────────────
-    log_info "Shrinking ext4 filesystem..."
-
     LOOP="$(losetup --find --show --partscan -- "${IMG_FILE}")"
-    e2fsck -f -y "${LOOP}p2" >/dev/null 2>&1 || true
-    resize2fs -M "${LOOP}p2" >/dev/null 2>&1
+    run_spin "Checking filesystem integrity" bash -c 'e2fsck -f -y "$1" >/dev/null 2>&1 || true' _ "${LOOP}p2"
+    run_spin "Shrinking ext4 filesystem to minimum" bash -c 'resize2fs -M "$1" >/dev/null 2>&1' _ "${LOOP}p2"
 
     # Calculate new partition boundaries
     local block_count block_size fs_size_bytes part2_start part2_end truncate_size
@@ -566,8 +742,7 @@ finalize_image() {
 
     # ── Compress ─────────────────────────────────────────────────────
     if [[ "${COMPRESS}" -eq 1 ]]; then
-        log_info "Compressing with xz (parallel, this may take a while)..."
-        xz -9 -T0 -f -- "${IMG_FILE}"
+        run_spin "Compressing image with xz (multi-threaded, level 9)" xz -9 -T0 -f -- "${IMG_FILE}"
         final_file="${IMG_FILE}.xz"
         local xz_size
         xz_size="$(stat --format=%s -- "${final_file}")"
@@ -577,7 +752,32 @@ finalize_image() {
     fi
 
     # ── Summary ──────────────────────────────────────────────────────
-    cat <<-SUMMARY
+    if [[ "${USE_GUM:-0}" -eq 1 ]]; then
+        printf '\n'
+        "$GUM_BIN" style \
+            --border double \
+            --border-foreground 42 \
+            --padding "1 2" \
+            --bold \
+            "✔ BUILD COMPLETE" \
+            "" \
+            "Image:       ${final_file}" \
+            "Version:     ${VERSION}" \
+            "Built:       $(date '+%Y-%m-%d %H:%M:%S %Z')" \
+            "" \
+            "Flash via Raspberry Pi Imager:" \
+            "  1. Choose OS → Use custom → select ${final_file}" \
+            "  2. Choose storage → Write" \
+            "" \
+            "Default credentials:" \
+            "  root  / ${ROOT_PASSWORD}" \
+            "  ${ALARM_USER} / ${ALARM_PASSWORD}" \
+            "" \
+            "First boot: connect Ethernet, SSH in, then:" \
+            "  sudo pacman -Syu"
+        printf '\n'
+    else
+        cat <<-SUMMARY
 
 	═══════════════════════════════════════════════════════════════
 	  BUILD COMPLETE
@@ -598,6 +798,7 @@ finalize_image() {
 	    sudo pacman -Syu
 	═══════════════════════════════════════════════════════════════
 	SUMMARY
+    fi
 }
 
 # ──────────────────────────────────────────────────────────────────────
@@ -608,6 +809,12 @@ main() {
         check_environment
         return $?
     fi
+
+    if [[ -n "${_arg_interactive}" ]]; then
+        interactive_wizard
+    fi
+
+    gum_banner
 
     local start_time
     start_time="$(date +%s)"
