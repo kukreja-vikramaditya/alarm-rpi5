@@ -192,6 +192,11 @@ configure_system() {
     arch-chroot "${ROOTFS}" /bin/bash <<-CHROOT
 	set -euo pipefail
 
+	# Machine ID & D-Bus initialization
+	systemd-machine-id-setup
+	mkdir -p /var/lib/dbus
+	ln -sf /etc/machine-id /var/lib/dbus/machine-id
+
 	# Pacman keyring
 	pacman-key --init
 	pacman-key --populate archlinuxarm
