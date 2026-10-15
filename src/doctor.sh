@@ -39,11 +39,12 @@ check_environment() {
     done
 
     # 3. Kernel binfmt_misc
-    if [[ -f /proc/sys/fs/binfmt_misc/qemu-aarch64 ]]; then
-        printf '  %-32s %s\n' "binfmt: qemu-aarch64" "$(format_badge OK)"
+    mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc 2>/dev/null || true
+    if [[ -f /proc/sys/fs/binfmt_misc/qemu-aarch64 || -f /proc/sys/fs/binfmt_misc/aarch64 || -f /proc/sys/fs/binfmt_misc/arm64 ]]; then
+        printf '  %-32s %s\n' "binfmt: aarch64" "$(format_badge OK)"
     else
         printf '  %-32s %s -> enable with: sudo systemctl restart systemd-binfmt.service\n' \
-            "binfmt: qemu-aarch64" "$(format_badge MISSING)"
+            "binfmt: aarch64" "$(format_badge MISSING)"
         ((issues++)) || true
     fi
 
@@ -127,8 +128,9 @@ Install them with:
     fi
 
     # Enforce binfmt
-    if [[ ! -f /proc/sys/fs/binfmt_misc/qemu-aarch64 ]]; then
-        die "binfmt_misc registration for qemu-aarch64 is missing.
+    mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc 2>/dev/null || true
+    if [[ ! -f /proc/sys/fs/binfmt_misc/qemu-aarch64 && ! -f /proc/sys/fs/binfmt_misc/aarch64 && ! -f /proc/sys/fs/binfmt_misc/arm64 ]]; then
+        die "binfmt_misc registration for aarch64 is missing.
 Install and start it:
   sudo pacman -S qemu-user-static qemu-user-static-binfmt
   sudo systemctl restart systemd-binfmt.service"

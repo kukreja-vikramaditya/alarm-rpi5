@@ -61,8 +61,9 @@ jobs:
 
       - name: Build ALARM image inside Arch Linux container
         run: |
+          set -o pipefail
           echo "==> Building container builder image from Dockerfile..."
-          docker build -t alarm-rpi5-builder .
+          docker build -t alarm-rpi5-builder . 2>&1 | tee docker-build.log
 
           echo "==> Running ALARM image build inside container..."
           docker run --rm --privileged \
@@ -71,7 +72,30 @@ jobs:
             -v /proc/sys/fs/binfmt_misc:/proc/sys/fs/binfmt_misc \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -w /workspace \
-            alarm-rpi5-builder -y
+            alarm-rpi5-builder -y 2>&1 | tee image-build.log
+
+      - name: Push failure log on error
+        if: failure()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan ci-debug-log || git checkout ci-debug-log
+          git rm -rf . || true
+          {
+            echo "================================================="
+            echo "DOCKER BUILD LOG"
+            echo "================================================="
+            cat docker-build.log 2>&1 || true
+            echo ""
+            echo "================================================="
+            echo "IMAGE BUILD LOG"
+            echo "================================================="
+            cat image-build.log 2>&1 || true
+          } > failure-log.txt
+          git add failure-log.txt
+          git commit -m "ci: capture failure logs [skip ci]" || true
+          git push -f origin ci-debug-log || true
+
 
       - name: Generate SHA-256 Checksums
         id: checksums

@@ -1,13 +1,13 @@
 FROM archlinux:latest
 
 # Configure reliable mirrors and install build tools
-RUN printf '%s\n' \
+RUN sed -i 's/^#DisableSandbox/DisableSandbox/' /etc/pacman.conf || true && \
+    grep -q '^DisableSandbox' /etc/pacman.conf || echo 'DisableSandbox' >> /etc/pacman.conf && \
+    printf '%s\n' \
         'Server = https://geo.mirror.pkgbuild.com/$repo/os/$arch' \
         'Server = https://mirror.rackspace.com/archlinux/$repo/os/$arch' \
         'Server = https://mirrors.kernel.org/archlinux/$repo/os/$arch' \
         > /etc/pacman.d/mirrorlist && \
-    pacman-key --init && \
-    pacman-key --populate archlinux && \
     pacman -Sy --noconfirm archlinux-keyring && \
     pacman -Syu --noconfirm --needed \
         arch-install-scripts \
@@ -17,8 +17,10 @@ RUN printf '%s\n' \
         xz \
         util-linux \
         coreutils \
+        curl \
         qemu-user-static \
-        qemu-user-static-binfmt
+        qemu-user-static-binfmt && \
+    pacman -Scc --noconfirm
 
 WORKDIR /workspace
 
