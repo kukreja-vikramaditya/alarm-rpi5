@@ -77,7 +77,9 @@ alarm-rpi5/
 │   ├── pacman-runtime.conf  # Target pacman.conf with signature verification
 │   └── sudoers-wheel        # Sudo permissions for wheel group
 ├── src/
-│   ├── ui.sh                # Terminal UI styling, Gum detection, logging, spinners
+│   ├── terminal.sh          # Terminal styling, Gum detection, spinners, status badges
+│   ├── logger.sh            # Structured logging (info/warn/error/phase) & fatal die exit
+│   ├── ui.sh                # Unified facade combining terminal styling and logging
 │   ├── cleanup.sh           # Safe EXIT/INT/TERM trap handler & idempotent cleanup
 │   ├── cli.sh               # Command line argument parser & usage help
 │   ├── config.sh            # Defaults, environment overrides, path calculation
@@ -85,10 +87,12 @@ alarm-rpi5/
 │   ├── doctor.sh            # Environment diagnostics (--check) & preflight checks
 │   └── build.sh             # 5-phase image builder, pacstrap, chroot config & shrink
 ├── tests/
-│   ├── run_all.sh           # Master test runner (all 9 suites)
+│   ├── run_all.sh           # Master test runner (all 11 suites)
 │   ├── test_helper.sh       # Shared assertion library and reporter
 │   ├── test_lint.sh         # ShellCheck & shfmt validation suite
-│   ├── test_ui.sh           # UI styling, badge formatting, logging tests
+│   ├── test_terminal.sh     # Terminal styling, Gum detection, badge & spinner tests
+│   ├── test_logger.sh       # Structured logging, error format, and die exit tests
+│   ├── test_ui.sh           # UI facade integration tests
 │   ├── test_cleanup.sh      # Unmounts, trap handling, temp file cleanup tests
 │   ├── test_cli.sh          # Argument parsing, flags, and usage tests
 │   ├── test_config.sh       # Defaults, overrides, image path calculation tests
@@ -297,7 +301,9 @@ Or run test suites for individual components directly:
 
 ```bash
 ./tests/test_lint.sh        # Shell linting & formatting (shellcheck & shfmt)
-./tests/test_ui.sh          # src/ui.sh (styling, logging, badges, spinners)
+./tests/test_terminal.sh    # src/terminal.sh (Gum discovery, styling, badges, spinners)
+./tests/test_logger.sh      # src/logger.sh (structured logging, format, fatal exits)
+./tests/test_ui.sh          # src/ui.sh (facade integration)
 ./tests/test_cleanup.sh     # src/cleanup.sh (unmounts, signal traps, temp cleanup)
 ./tests/test_cli.sh         # src/cli.sh (argument parsing, flags, usage)
 ./tests/test_config.sh      # src/config.sh (defaults, env overrides, path math)
@@ -317,7 +323,7 @@ To run diagnostic checks on your host system without building:
 
 A GitHub Actions workflow ([`.github/workflows/build.yml`](.github/workflows/build.yml)) automates testing, image building, and distribution:
 
-1. **Lint & Test**: On every push and pull request, ShellCheck, `shfmt`, and all 9 unit test suites (213 assertions) run automatically.
+1. **Lint & Test**: On every push and pull request, ShellCheck, `shfmt`, and all 11 unit test suites run automatically.
 2. **Build**: On every commit to `main` or `master` (or manual `workflow_dispatch`), an Arch Linux container runs the batch build pipeline using QEMU ARM64 binfmt emulation.
 3. **Publish**:
    - Generates SHA-256 checksums (`SHA256SUMS`).

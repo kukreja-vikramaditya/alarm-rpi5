@@ -20,8 +20,10 @@ readonly SRC_DIR="${SCRIPT_DIR}/src"
 readonly DATA_DIR="${SCRIPT_DIR}/data"
 
 # Source modular components
-# shellcheck source=src/ui.sh
-source "${SRC_DIR}/ui.sh"
+# shellcheck source=src/terminal.sh
+source "${SRC_DIR}/terminal.sh"
+# shellcheck source=src/logger.sh
+source "${SRC_DIR}/logger.sh"
 # shellcheck source=src/cleanup.sh
 source "${SRC_DIR}/cleanup.sh"
 # shellcheck source=src/cli.sh
