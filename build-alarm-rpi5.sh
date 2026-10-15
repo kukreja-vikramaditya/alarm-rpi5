@@ -246,6 +246,7 @@ else
 fi
 
 IMG_FILE="${OUTPUT_DIR}/${IMG_NAME}.img"
+FINAL_BUILT_FILE=""
 ROOTFS=""     # Set in main body; needs to be mutable for cleanup
 PACMAN_CONF="" # Set in main body
 LOOP=""        # Set in main body; loopback device, mutable
@@ -821,6 +822,8 @@ finalize_image() {
         final_file="${IMG_FILE}"
     fi
 
+    FINAL_BUILT_FILE="${final_file}"
+
     # ── Summary ──────────────────────────────────────────────────────
     if [[ "${USE_GUM:-0}" -eq 1 ]]; then
         printf '\n'
@@ -875,13 +878,39 @@ finalize_image() {
 # Main
 # ──────────────────────────────────────────────────────────────────────
 main() {
+    # 1. Diagnostic mode (--check) runs without root
     if [[ -n "${_arg_check}" ]]; then
         check_environment
         return $?
     fi
 
+    # 2. Explicit interactive mode without a tty fails early
+    if [[ -n "${_arg_interactive:-}" && ( ! -t 0 || ! -t 1 ) ]]; then
+        die "Interactive mode requires an interactive terminal (stdin and stdout must be a tty)."
+    fi
+
+    # 3. IMMEDIATE ROOT/SUDO CHECK — RUNS BEFORE ANY WIZARD QUESTIONS
+    if [[ $EUID -ne 0 ]]; then
+        if [[ -t 0 && -t 1 ]]; then
+            log_warn "Root privileges are required to build disk images (mount, losetup, pacstrap)."
+            log_info "Prompting for sudo password..."
+            exec sudo -- "$0" "$@"
+        else
+            die "This script must be run as root (or via sudo)."
+        fi
+    fi
+
+    # 3. Prerequisites check (tools, binfmt)
+    preflight
+
+    # 4. Interactive wizard (only runs once root and tools are verified!)
     if [[ -z "${_arg_non_interactive}" ]]; then
         interactive_wizard
+    fi
+
+    # 5. Overwrite guard for configured output file
+    if [[ -f "${IMG_FILE}" || -f "${IMG_FILE}.xz" ]]; then
+        die "Output already exists: ${IMG_FILE}(.xz). Remove it first or change --version."
     fi
 
     gum_banner
@@ -889,7 +918,6 @@ main() {
     local start_time
     start_time="$(date +%s)"
 
-    preflight
     create_image
     bootstrap_rootfs
     configure_boot
@@ -898,6 +926,13 @@ main() {
 
     local elapsed=$(( $(date +%s) - start_time ))
     log_info "Total build time: $(( elapsed / 60 ))m $(( elapsed % 60 ))s"
+
+    echo ""
+    echo "================================================================"
+    echo "BUILT IMAGE PATH:"
+    echo "${FINAL_BUILT_FILE}"
+    echo "================================================================"
+    echo ""
 }
 
 main "$@"
