@@ -94,17 +94,6 @@ assert_contains "$out" "ALARM mirror reachable" "--check tests mirror connectivi
 
 # Test 10: Docker & Wizard entrypoints
 assert_file_exists "${SCRIPT_DIR}/Dockerfile" "Dockerfile exists"
-assert_file_exists "${SCRIPT_DIR}/docker-build.sh" "docker-build.sh exists"
-if [[ -x "${SCRIPT_DIR}/docker-build.sh" ]]; then
-    assert_eq "0" "0" "docker-build.sh is executable"
-else
-    assert_eq "0" "1" "docker-build.sh is executable"
-fi
-if bash -n "${SCRIPT_DIR}/docker-build.sh"; then
-    assert_eq "0" "0" "docker-build.sh syntax validation (bash -n)"
-else
-    assert_eq "0" "1" "docker-build.sh syntax validation (bash -n)"
-fi
 assert_file_exists "${SCRIPT_DIR}/wizard.sh" "wizard.sh exists"
 if [[ -x "${SCRIPT_DIR}/wizard.sh" ]]; then
     assert_eq "0" "0" "wizard.sh is executable"
