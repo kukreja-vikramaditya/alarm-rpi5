@@ -6,9 +6,23 @@ on:
       - main
     tags:
       - 'v*'
+    paths-ignore:
+      - 'README.md'
+      - 'LICENSE'
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+      - '.dockerignore'
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - 'README.md'
+      - 'LICENSE'
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+      - '.dockerignore'
   workflow_dispatch:
 
 permissions:
@@ -36,7 +50,10 @@ jobs:
   build:
     name: Build & Publish Image
     needs: test
-    if: github.event_name != 'pull_request'
+    if: |
+      github.event_name != 'pull_request' &&
+      !contains(github.event.head_commit.message, '[skip build]') &&
+      !contains(github.event.head_commit.message, '[skip image]')
     runs-on: ubuntu-latest
 
     steps:
