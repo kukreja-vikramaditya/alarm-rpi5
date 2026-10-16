@@ -60,33 +60,33 @@ host_out="$(ALARM_FORCE_HOST_MODE=1 MOCK_DOCKER_MISSING=1 "$BIN" 2>&1 || true)"
 set -e
 assert_contains "$host_out" "Docker is required" "host mode enforces Docker requirement"
 
-# Test 7: Container / native non-root invocation
+# Test 7: Container internal non-root invocation
 set +e
-out="$(MOCK_EUID=1000 ALARM_NATIVE=1 "$BIN" 2>&1)"
+out="$(MOCK_EUID=1000 ALARM_INTERNAL_BUILD=1 "$BIN" 2>&1)"
 code=$?
 set -e
 assert_eq "1" "$code" "non-root build attempt exits with code 1"
 assert_contains "$out" "This script must be run as root" "non-root error message"
 
-# Test 8: Non-tty interactive invocation in container/native
+# Test 8: Non-tty interactive invocation in container
 set +e
-out="$(ALARM_NATIVE=1 "$BIN" --interactive 2>&1)"
+out="$(ALARM_INTERNAL_BUILD=1 "$BIN" --interactive 2>&1)"
 code=$?
 set -e
 assert_eq "1" "$code" "--interactive without tty exits with code 1"
 assert_contains "$out" "requires an interactive terminal" "--interactive non-tty message"
 
-# Test 9: Non-interactive batch flag (-y) without root in container/native
+# Test 9: Non-interactive batch flag (-y) without root in container
 set +e
-out="$(MOCK_EUID=1000 ALARM_NATIVE=1 "$BIN" -y 2>&1)"
+out="$(MOCK_EUID=1000 ALARM_INTERNAL_BUILD=1 "$BIN" -y 2>&1)"
 code=$?
 set -e
 assert_eq "1" "$code" "-y without root exits with code 1"
 assert_contains "$out" "This script must be run as root" "-y non-root message"
 
-# Test 10: --check diagnostics execution
+# Test 10: --check diagnostics execution in container
 set +e
-out="$(ALARM_NATIVE=1 "$BIN" --check 2>&1)"
+out="$(ALARM_INTERNAL_BUILD=1 "$BIN" --check 2>&1)"
 code=$?
 set -e
 assert_contains "$out" "Host Environment Diagnostics" "--check header present"

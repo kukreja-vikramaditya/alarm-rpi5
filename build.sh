@@ -45,9 +45,9 @@ main() {
     parse_cli "$@"
 
     # 2. Host-to-Container Bridge
-    # Unless inside a container (/.dockerenv / ALARM_INTERNAL_BUILD) or forced native mode,
+    # Docker is mandatory. Unless already inside the container (/.dockerenv / ALARM_INTERNAL_BUILD),
     # build seamlessly inside the Arch Linux container image.
-    if [[ "${ALARM_FORCE_HOST_MODE:-0}" -eq 1 ]] || [[ ! -f /.dockerenv && -z "${ALARM_INTERNAL_BUILD:-}" && "${ALARM_NATIVE:-0}" -ne 1 ]]; then
+    if [[ "${ALARM_FORCE_HOST_MODE:-0}" -eq 1 ]] || [[ ! -f /.dockerenv && -z "${ALARM_INTERNAL_BUILD:-}" ]]; then
         if [[ -n "${_arg_check:-}" ]]; then
             log_phase "Host Docker Environment Diagnostics"
             if command -v docker &>/dev/null; then
@@ -64,7 +64,7 @@ main() {
         fi
 
         if [[ "${MOCK_DOCKER_MISSING:-0}" -eq 1 ]] || ! command -v docker &>/dev/null || ! docker --version &>/dev/null; then
-            die "Docker is required to build Arch Linux ARM images on non-Arch hosts.
+            die "Docker is required to build Arch Linux ARM images.
 Please install Docker and ensure the Docker daemon is running.
 If using Docker Desktop on Windows with WSL 2, enable WSL Integration in:
   Docker Desktop -> Settings -> Resources -> WSL Integration"

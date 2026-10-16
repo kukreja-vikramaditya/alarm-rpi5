@@ -39,10 +39,7 @@ The built image is pre-configured with default credentials and passwordless `sud
 ## Requirements
 
 - **Docker** (Docker Desktop on Windows/macOS, or Docker Engine on Linux).
-  You do **not** need an Arch Linux PC. Everything (including `pacstrap`, `arch-chroot`, `qemu-user-static`, and Charm `gum`) is pre-installed inside the isolated Arch Linux builder container.
-
-> [!NOTE]
-> If building natively on an Arch Linux host without Docker, pass `ALARM_NATIVE=1 sudo ./build.sh`.
+  Docker is strictly required. You do **not** need an Arch Linux PC. Everything (including `pacstrap`, `arch-chroot`, `qemu-user-static`, and Charm `gum`) is pre-installed and executed inside the isolated Arch Linux builder container.
 
 ## Quick start
 
@@ -68,7 +65,7 @@ Output lands in `dist/`. That's it.
 
 ## Project Structure
 
-The project is structured modularly with Docker and native entry points:
+The project is structured modularly with Docker at its core:
 
 ```
 alarm-rpi5/
