@@ -23,8 +23,11 @@ BOOT_SIZE_MIB="${BOOT_SIZE}"
 TZ="${TZ:-${TIMEZONE:-Asia/Kolkata}}"
 TIMEZONE="${TZ}"
 
-LANG="${LANG:-${LOCALE:-en_US.UTF-8}}"
-LOCALE="${LANG}"
+if [[ "${LANG:-}" == "C.UTF-8" || "${LANG:-}" == "C" || "${LANG:-}" == "POSIX" ]]; then
+    LANG=""
+fi
+LOCALE="${LOCALE:-${LANG:-en_US.UTF-8}}"
+LANG="${LOCALE}"
 
 PACKAGES="${PACKAGES:-${EXTRA_PACKAGES:-git curl wget vim neovim tmux zsh}}"
 EXTRA_PACKAGES="${PACKAGES}"
@@ -57,8 +60,11 @@ BOOT_SIZE_MIB="${BOOT_SIZE}"
 TZ="${TZ:-${TIMEZONE:-Asia/Kolkata}}"
 TIMEZONE="${TZ}"
 
-LANG="${LANG:-${LOCALE:-en_US.UTF-8}}"
-LOCALE="${LANG}"
+if [[ "${LANG:-}" == "C.UTF-8" || "${LANG:-}" == "C" || "${LANG:-}" == "POSIX" ]]; then
+    LANG=""
+fi
+LOCALE="${LOCALE:-${LANG:-en_US.UTF-8}}"
+LANG="${LOCALE}"
 
 PACKAGES="${PACKAGES:-${EXTRA_PACKAGES:-git curl wget vim neovim tmux zsh}}"
 EXTRA_PACKAGES="${PACKAGES}"
