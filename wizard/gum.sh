@@ -12,7 +12,7 @@ wizard_gum() {
     echo ""
 
     VERSION="$("$GUM_BIN" input --header "📦 Image Version" --value "${VERSION}")"
-    VERSION="${VERSION:-1.1.0-snapshot}"
+    VERSION="${VERSION:-0.0.0-snapshot}"
     "$GUM_BIN" style --foreground 212 "  ✓ Image Version:     ${VERSION}"
 
     TARGET_HOSTNAME="$("$GUM_BIN" input --header "🏷️  Target Hostname" --value "${TARGET_HOSTNAME}")"

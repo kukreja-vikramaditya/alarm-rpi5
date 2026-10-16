@@ -8,6 +8,7 @@ wizard_bash() {
 
     read -r -p "📦 Image version [${VERSION}]: " in_ver
     [[ -n "$in_ver" ]] && VERSION="$in_ver"
+    VERSION="${VERSION:-0.0.0-snapshot}"
 
     read -r -p "🏷️  Target hostname [${TARGET_HOSTNAME}]: " in_host
     [[ -n "$in_host" ]] && TARGET_HOSTNAME="$in_host"

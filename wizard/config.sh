@@ -50,7 +50,7 @@ load_wizard_defaults() {
     if [[ -f "${SCRIPT_DIR}/VERSION" ]]; then
         VERSION="$(tr -d '[:space:]' <"${SCRIPT_DIR}/VERSION")"
     fi
-    VERSION="${VERSION:-1.1.0-snapshot}"
+    VERSION="${VERSION:-0.0.0-snapshot}"
     TARGET_HOSTNAME="raspberrypi"
     ROOT_USER="root"
     ROOT_PASSWORD="root"
@@ -63,7 +63,7 @@ load_wizard_defaults() {
     if [[ -f "${SCRIPT_DIR}/alarm.conf" ]]; then
         # shellcheck source=/dev/null
         source "${SCRIPT_DIR}/alarm.conf"
-        VERSION="${VERSION:-1.1.0-snapshot}"
+        VERSION="${VERSION:-0.0.0-snapshot}"
         TARGET_HOSTNAME="${HOSTNAME:-${TARGET_HOSTNAME:-raspberrypi}}"
         ROOT_USER="${ROOT_USER:-root}"
         ROOT_PASSWORD="${ROOT_PASSWORD:-root}"

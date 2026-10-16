@@ -18,6 +18,7 @@ readonly GUM_BIN
 
 FORCE_BASH=0
 DRY_RUN=0
+VERSION="${VERSION:-0.0.0-snapshot}"
 
 # Source modular wizard components
 # shellcheck source=wizard/config.sh
