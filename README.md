@@ -63,56 +63,6 @@ Or pass custom flags:
 
 Output lands in `dist/`. That's it.
 
-## Project Structure
-
-The project is structured modularly with Docker at its core:
-
-```
-alarm-rpi5/
-├── Dockerfile               # Container definition for isolated Arch Linux builds
-├── docker-build.sh          # Legacy convenience wrapper (delegates to ./build.sh)
-├── wizard.sh                # Standalone interactive Charm Gum TUI command builder
-├── .dockerignore            # Docker build context exclusions
-├── build.sh                 # Unified build engine & universal host-to-container runner
-├── alarm.conf               # Declarative build configuration overrides
-├── data/                    # Configuration templates and static files deployed to rootfs
-│   ├── 20-wired.network     # Wired Ethernet DHCP configuration (systemd-networkd)
-│   ├── alarm-expand-root.service # One-shot systemd service to expand partition on first boot
-│   ├── alarm-expand-root.sh # Root filesystem auto-expansion script
-│   ├── cmdline.txt          # Kernel boot cmdline parameters
-│   ├── config.txt           # Pi 5 bootloader configuration
-│   ├── fstab                # Partition mount definitions
-│   ├── hosts                # Local hostname mapping template
-│   ├── install-ui.sh        # Pre-installed automated desktop environment installer
-│   ├── locale.conf          # System locale configuration template
-│   ├── locale.gen           # Locale generation definitions
-│   ├── pacman-bootstrap.conf# Temporary pacman config for pacstrap on host
-│   ├── pacman-runtime.conf  # Target pacman.conf with signature verification
-│   └── sudoers-wheel        # Sudo permissions for wheel group
-├── src/
-│   ├── terminal.sh          # Terminal styling, Gum detection, spinners, status badges
-│   ├── logger.sh            # Structured logging (info/warn/error/phase) & fatal die exit
-│   ├── cleanup.sh           # Safe EXIT/INT/TERM trap handler & idempotent cleanup
-│   ├── cli.sh               # Command line argument parser & usage help
-│   ├── config.sh            # Defaults, environment overrides, path calculation
-│   ├── doctor.sh            # Environment diagnostics (--check) & preflight checks
-│   └── build.sh             # 5-phase image builder, pacstrap, chroot config & shrink
-├── tests/
-│   ├── run_all.sh           # Master test runner (all 10 suites)
-│   ├── test_helper.sh       # Shared assertion library and reporter
-│   ├── test_lint.sh         # ShellCheck & shfmt validation suite
-│   ├── test_terminal.sh     # Terminal styling, Gum detection, badge & spinner tests
-│   ├── test_logger.sh       # Structured logging, error format, and die exit tests
-│   ├── test_cleanup.sh      # Unmounts, trap handling, temp file cleanup tests
-│   ├── test_cli.sh          # Argument parsing, flags, and usage tests
-│   ├── test_config.sh       # Defaults, overrides, image path calculation tests
-│   ├── test_wizard.sh       # Standalone wizard command builder tests
-│   ├── test_doctor.sh       # Dependency checks, package mappings, preflight tests
-│   ├── test_build.sh        # Boot configuration, fstab, pacman generation tests
-│   └── test_entrypoint.sh   # Root entry points, CLI dispatch, non-root checks
-└── dist/                    # Default output directory for generated images (.img.xz)
-```
-
 ## Usage
 
 ```
