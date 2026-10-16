@@ -349,7 +349,7 @@ GitHub Actions workflows automate testing, image building, and distribution:
    - **Purpose**: Arch Linux is a rolling-release distribution. Older pre-built images require extensive `pacman -Syu` downloads on first boot. This workflow publishes an updated `latest-snapshot` release containing the freshest packages directly from upstream mirrors.
 
 3. **Skipping CI Builds**:
-   - **Automatic skip for documentation**: Commits that only modify documentation (`README.md`, `LICENSE`, `*.md`) or repository ignore files (`.gitignore`, `.dockerignore`) automatically skip the entire CI pipeline via `paths-ignore`.
+   - **Automatic skip for documentation**: Commits that only modify documentation (`README.md`, `LICENSE`, `*.md`) or repository ignore files (`.gitignore`, `.dockerignore`) automatically skip the entire CI pipeline via GitHub Actions `paths-ignore`.
    - **Manual CI skip**: Include `[skip ci]` or `[ci skip]` in your commit message to skip the entire CI workflow for any commit.
    - **Skip image building only**: Include `[skip build]` or `[skip image]` in your commit message to run the fast linter and unit tests while skipping the resource-intensive OS image generation and release step.
 
