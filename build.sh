@@ -32,8 +32,6 @@ source "${SRC_DIR}/cleanup.sh"
 source "${SRC_DIR}/cli.sh"
 # shellcheck source=src/config.sh
 source "${SRC_DIR}/config.sh"
-# shellcheck source=src/wizard.sh
-source "${SRC_DIR}/wizard.sh"
 # shellcheck source=src/doctor.sh
 source "${SRC_DIR}/doctor.sh"
 # shellcheck source=src/build.sh
@@ -99,12 +97,21 @@ If using Docker Desktop on Windows with WSL 2, enable WSL Integration in:
         return $?
     fi
 
-    # 4. Explicit interactive mode without a tty fails early
-    if [[ -n "${_arg_interactive:-}" && (! -t 0 || ! -t 1) ]]; then
-        die "Interactive mode requires an interactive terminal (stdin and stdout must be a tty)."
+    # 4. Interactive mode delegation:
+    # Explicit --interactive flag without a TTY fails early; with a TTY, it launches wizard.sh
+    if [[ -n "${_arg_interactive:-}" ]]; then
+        if [[ ! -t 0 || ! -t 1 ]]; then
+            die "Interactive mode requires an interactive terminal (stdin and stdout must be a tty)."
+        fi
+        exec "${SCRIPT_DIR}/wizard.sh"
     fi
 
-    # 5. IMMEDIATE ROOT/SUDO CHECK — RUNS BEFORE ANY WIZARD QUESTIONS
+    # Running build.sh interactively with zero arguments delegates to the standalone wizard
+    if [[ $# -eq 0 && -z "${_arg_non_interactive:-}" && -t 0 && -t 1 ]]; then
+        exec "${SCRIPT_DIR}/wizard.sh"
+    fi
+
+    # 5. IMMEDIATE ROOT/SUDO CHECK — Required for loop device, partitioning, and pacstrap
     if [[ "${MOCK_EUID:-$EUID}" -ne 0 ]]; then
         if [[ -t 0 && -t 1 ]]; then
             log_warn "Root privileges are required to build disk images (mount, losetup, pacstrap)."
@@ -115,19 +122,14 @@ If using Docker Desktop on Windows with WSL 2, enable WSL Integration in:
         fi
     fi
 
-    # 5. Clean up any lingering resources from previous runs BEFORE setup begins
+    # 6. Clean up any lingering resources from previous runs BEFORE setup begins
     cleanup_previous_run
 
-    # 6. Initialize configuration (flags > env > defaults)
+    # 7. Initialize configuration (flags > env > defaults)
     init_config
 
-    # 7. Preflight checks (tools, binfmt, qemu)
+    # 8. Preflight checks (tools, binfmt, qemu)
     preflight
-
-    # 8. Interactive wizard (only runs once root and tools are verified!)
-    if [[ -z "${_arg_non_interactive}" ]]; then
-        interactive_wizard
-    fi
 
     # 9. Validate configuration values (hostname, usernames, etc.)
     validate_config

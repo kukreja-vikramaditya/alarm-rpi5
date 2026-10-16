@@ -21,7 +21,7 @@ SUITES=(
     "test_cleanup.sh"    # src/cleanup.sh
     "test_cli.sh"        # src/cli.sh
     "test_config.sh"     # src/config.sh
-    "test_wizard.sh"     # src/wizard.sh
+    "test_wizard.sh"     # wizard.sh standalone interactive TUI
     "test_doctor.sh"     # src/doctor.sh
     "test_build.sh"      # src/build.sh
     "test_entrypoint.sh" # build.sh root entry point

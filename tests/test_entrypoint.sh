@@ -92,7 +92,7 @@ set -e
 assert_contains "$out" "Host Environment Diagnostics" "--check header present"
 assert_contains "$out" "ALARM mirror reachable" "--check tests mirror connectivity"
 
-# Test 10: Docker entrypoints
+# Test 10: Docker & Wizard entrypoints
 assert_file_exists "${SCRIPT_DIR}/Dockerfile" "Dockerfile exists"
 assert_file_exists "${SCRIPT_DIR}/docker-build.sh" "docker-build.sh exists"
 if [[ -x "${SCRIPT_DIR}/docker-build.sh" ]]; then
@@ -104,6 +104,12 @@ if bash -n "${SCRIPT_DIR}/docker-build.sh"; then
     assert_eq "0" "0" "docker-build.sh syntax validation (bash -n)"
 else
     assert_eq "0" "1" "docker-build.sh syntax validation (bash -n)"
+fi
+assert_file_exists "${SCRIPT_DIR}/wizard.sh" "wizard.sh exists"
+if [[ -x "${SCRIPT_DIR}/wizard.sh" ]]; then
+    assert_eq "0" "0" "wizard.sh is executable"
+else
+    assert_eq "0" "1" "wizard.sh is executable"
 fi
 
 test_summary "Root Entry Points"

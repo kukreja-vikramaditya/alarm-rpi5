@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tests/test_wizard.sh — Unit tests for src/wizard.sh
+# tests/test_wizard.sh — Unit tests for standalone wizard.sh
 set -euo pipefail
 
 TEST_PATH="$(realpath -- "${BASH_SOURCE[0]}")"
@@ -7,56 +7,54 @@ TEST_DIR="$(dirname -- "${TEST_PATH}")"
 # shellcheck source=tests/test_helper.sh
 source "${TEST_DIR}/test_helper.sh"
 
-echo "=== Unit Tests: src/wizard.sh ==="
+WIZARD_BIN="${SCRIPT_DIR}/wizard.sh"
 
-# Syntax validation
-if bash -n "${SRC_DIR}/wizard.sh"; then
-    assert_eq "0" "0" "src/wizard.sh syntax validation (bash -n)"
+echo "=== Unit Tests: Standalone Interactive TUI (wizard.sh) ==="
+
+# Test 1: Syntax validation
+if bash -n "$WIZARD_BIN"; then
+    assert_eq "0" "0" "wizard.sh syntax validation (bash -n)"
 else
-    assert_eq "0" "1" "src/wizard.sh syntax validation (bash -n)"
+    assert_eq "0" "1" "wizard.sh syntax validation (bash -n)"
 fi
 
-# Source dependencies
-# shellcheck source=src/terminal.sh
-source "${SRC_DIR}/terminal.sh"
-# shellcheck source=src/logger.sh
-source "${SRC_DIR}/logger.sh"
-# shellcheck source=src/config.sh
-source "${SRC_DIR}/config.sh"
-# shellcheck source=src/wizard.sh
-source "${SRC_DIR}/wizard.sh"
+# Test 2: File exists and permissions
+assert_file_exists "$WIZARD_BIN" "wizard.sh exists"
+if [[ -x "$WIZARD_BIN" ]]; then
+    assert_eq "0" "0" "wizard.sh is executable"
+else
+    assert_eq "0" "1" "wizard.sh is executable"
+fi
 
-init_config
+# Test 3: Help flags
+help_out="$("$WIZARD_BIN" --help)"
+assert_contains "$help_out" "Usage: ./wizard.sh" "wizard.sh --help displays usage"
+assert_contains "$help_out" "--bash" "wizard.sh lists --bash option"
+assert_contains "$help_out" "--dry-run" "wizard.sh lists --dry-run option"
 
-# Test 1: interactive_wizard non-tty guard returns 0 when not explicit
-_arg_interactive=""
+h_out="$("$WIZARD_BIN" -h)"
+assert_contains "$h_out" "Usage: ./wizard.sh" "wizard.sh -h displays usage"
+
+# Test 4: Unknown flag exits with error
 set +e
-interactive_wizard </dev/null
+err_flag="$("$WIZARD_BIN" --unknown-option 2>&1)"
+flag_code=$?
+set -e
+assert_eq "1" "$flag_code" "unknown option exits 1"
+assert_contains "$err_flag" "Unknown option" "unknown option error message"
+
+# Test 5: Non-TTY guard
+set +e
+err_out="$("$WIZARD_BIN" </dev/null 2>&1)"
 code=$?
 set -e
-assert_eq "0" "$code" "interactive_wizard returns 0 when not on a TTY and no explicit flag"
+assert_eq "1" "$code" "wizard.sh dies when invoked without interactive terminal"
+assert_contains "$err_out" "requires an interactive terminal" "correct non-tty error message"
 
-# Test 2: interactive_wizard non-tty guard dies when explicit --interactive is given
-_arg_interactive="1"
+# Test 6: Bash fallback mode processes inputs and builds executable command
 set +e
-err_out="$(interactive_wizard </dev/null 2>&1)"
-code=$?
-set -e
-assert_eq "1" "$code" "interactive_wizard dies when --interactive without TTY"
-assert_contains "$err_out" "Interactive mode requires an interactive terminal" "correct non-tty error message"
-_arg_interactive=""
-
-# Test 3: interactive_wizard_bash processes inputs properly
-VERSION="0.1.0"
-TARGET_HOSTNAME="raspberrypi"
-ROOT_USER="root"
-ROOT_PASSWORD="root"
-ALARM_USER="alarm"
-ALARM_PASSWORD="alarm"
-IMG_SIZE="4G"
-COMPRESS=1
-
-interactive_wizard_bash <<EOF >/dev/null
+out="$( (
+    "$WIZARD_BIN" --bash --dry-run <<EOF
 0.9.0
 rpi5-test
 rootadmin
@@ -67,19 +65,24 @@ user123
 y
 y
 EOF
+) 2>&1)"
+dry_code=$?
+set -e
+assert_eq "0" "$dry_code" "wizard.sh --bash --dry-run exits with 0 on confirmation"
+assert_contains "$out" "Version:          0.9.0" "wizard summary updates VERSION"
+assert_contains "$out" "Hostname:         rpi5-test" "wizard summary updates TARGET_HOSTNAME"
+assert_contains "$out" "Root User:        rootadmin" "wizard summary updates ROOT_USER"
+assert_contains "$out" "Non-Root User:    tester" "wizard summary updates ALARM_USER"
+assert_contains "$out" "Image Size:       8G" "wizard summary updates IMG_SIZE"
+assert_contains "$out" "Compressed:       1 (xz)" "wizard summary sets COMPRESS to 1 on 'y'"
+assert_contains "$out" "Executable Command:" "wizard summary includes Executable Command"
+assert_contains "$out" "./build.sh -y -v \"0.9.0\" --hostname \"rpi5-test\" --root-user \"rootadmin\" -u \"tester\" -s \"8G\"" "command includes customized inputs"
+assert_contains "$out" "Dry run enabled. Executable command:" "dry run message printed"
 
-assert_eq "0.9.0" "$VERSION" "wizard updates VERSION"
-assert_eq "rpi5-test" "$TARGET_HOSTNAME" "wizard updates TARGET_HOSTNAME"
-assert_eq "rootadmin" "$ROOT_USER" "wizard updates ROOT_USER"
-assert_eq "root123" "$ROOT_PASSWORD" "wizard updates ROOT_PASSWORD"
-assert_eq "tester" "$ALARM_USER" "wizard updates ALARM_USER"
-assert_eq "user123" "$ALARM_PASSWORD" "wizard updates ALARM_PASSWORD"
-assert_eq "8G" "$IMG_SIZE" "wizard updates IMG_SIZE"
-assert_eq "1" "$COMPRESS" "wizard sets COMPRESS to 1 on 'y'"
-
-# Test 4: interactive_wizard_bash handles compression disabled
-COMPRESS=1
-interactive_wizard_bash <<EOF >/dev/null
+# Test 7: Compression disabled handling
+set +e
+no_comp_out="$( (
+    "$WIZARD_BIN" --bash --dry-run <<EOF
 
 
 
@@ -90,12 +93,17 @@ interactive_wizard_bash <<EOF >/dev/null
 n
 y
 EOF
-assert_eq "0" "$COMPRESS" "wizard sets COMPRESS to 0 on 'n'"
+) 2>&1)"
+no_comp_code=$?
+set -e
+assert_eq "0" "$no_comp_code" "wizard handles disabled compression cleanly"
+assert_contains "$no_comp_out" "Compressed:       0 (xz)" "wizard summary sets COMPRESS to 0 on 'n'"
+assert_contains "$no_comp_out" "--no-compress" "executable command includes --no-compress"
 
-# Test 5: interactive_wizard_bash cancellation when user declines confirmation
+# Test 8: Cancellation when user declines confirmation
 set +e
 cancel_out="$( (
-    interactive_wizard_bash <<EOF
+    "$WIZARD_BIN" --bash <<EOF
 0.1.0
 raspberrypi
 root
@@ -114,4 +122,4 @@ assert_contains "$cancel_out" "Build cancelled by user" "wizard prints cancellat
 assert_contains "$cancel_out" "Executable Command:" "wizard summary includes Executable Command"
 assert_contains "$cancel_out" "./build.sh -y" "wizard summary includes executable CLI command"
 
-test_summary "src/wizard.sh"
+test_summary "wizard.sh"

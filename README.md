@@ -72,10 +72,11 @@ The project is structured modularly with Docker and native entry points:
 
 ```
 alarm-rpi5/
-├── Dockerfile               # Container definition for isolated builds
-├── docker-build.sh          # One-command Docker build launcher
+├── Dockerfile               # Container definition for isolated Arch Linux builds
+├── docker-build.sh          # Legacy convenience wrapper (delegates to ./build.sh)
+├── wizard.sh                # Standalone interactive Charm Gum TUI command builder
 ├── .dockerignore            # Docker build context exclusions
-├── build.sh                 # Primary root entry point
+├── build.sh                 # Unified build engine & universal host-to-container runner
 ├── alarm.conf               # Declarative build configuration overrides
 ├── data/                    # Configuration templates and static files deployed to rootfs
 │   ├── 20-wired.network     # Wired Ethernet DHCP configuration (systemd-networkd)
@@ -97,7 +98,6 @@ alarm-rpi5/
 │   ├── cleanup.sh           # Safe EXIT/INT/TERM trap handler & idempotent cleanup
 │   ├── cli.sh               # Command line argument parser & usage help
 │   ├── config.sh            # Defaults, environment overrides, path calculation
-│   ├── wizard.sh            # Interactive setup wizards (Charm Gum + pure Bash fallback)
 │   ├── doctor.sh            # Environment diagnostics (--check) & preflight checks
 │   └── build.sh             # 5-phase image builder, pacstrap, chroot config & shrink
 ├── tests/
@@ -109,7 +109,7 @@ alarm-rpi5/
 │   ├── test_cleanup.sh      # Unmounts, trap handling, temp file cleanup tests
 │   ├── test_cli.sh          # Argument parsing, flags, and usage tests
 │   ├── test_config.sh       # Defaults, overrides, image path calculation tests
-│   ├── test_wizard.sh       # Interactive wizard input processing & TTY guard tests
+│   ├── test_wizard.sh       # Standalone wizard command builder tests
 │   ├── test_doctor.sh       # Dependency checks, package mappings, preflight tests
 │   ├── test_build.sh        # Boot configuration, fstab, pacman generation tests
 │   └── test_entrypoint.sh   # Root entry points, CLI dispatch, non-root checks
@@ -323,7 +323,7 @@ Or run test suites for individual components directly:
 ./tests/test_cleanup.sh     # src/cleanup.sh (unmounts, signal traps, temp cleanup)
 ./tests/test_cli.sh         # src/cli.sh (argument parsing, flags, usage)
 ./tests/test_config.sh      # src/config.sh (defaults, env overrides, path math)
-./tests/test_wizard.sh      # src/wizard.sh (interactive wizards, tty guards)
+./tests/test_wizard.sh      # wizard.sh (standalone interactive TUI & command generator)
 ./tests/test_doctor.sh      # src/doctor.sh (environment diagnostics, package map)
 ./tests/test_build.sh       # src/build.sh (boot configs, partition math, pacman)
 ./tests/test_entrypoint.sh  # build.sh root entry point
