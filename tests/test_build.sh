@@ -55,7 +55,9 @@ assert_contains "$fstab_content" "ext4" "fstab specifies ext4 for root"
 # Validate cmdline.txt
 assert_file_exists "${mock_rootfs}/boot/cmdline.txt" "cmdline.txt created"
 cmdline_content="$(cat "${mock_rootfs}/boot/cmdline.txt")"
-assert_contains "$cmdline_content" "root=/dev/mmcblk0p2" "cmdline sets root partition"
+assert_contains "$cmdline_content" "root=LABEL=ROOT" "cmdline sets root partition to filesystem label"
+assert_contains "$cmdline_content" "fsck.repair=yes" "cmdline enables fsck.repair"
+assert_contains "$cmdline_content" "cgroup_enable=memory cgroup_memory=1" "cmdline enables memory cgroups"
 assert_contains "$cmdline_content" "console=tty1" "cmdline enables tty1"
 assert_contains "$cmdline_content" "console=ttyAMA10,115200" "cmdline sets Pi 5 UART"
 
