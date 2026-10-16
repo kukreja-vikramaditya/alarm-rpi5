@@ -11,10 +11,6 @@ if [[ -z "${REQUIRED_CMDS+x}" ]]; then
     )
 fi
 
-# Baseline host environment to distinguish bash internal variables from explicit overrides
-_HOST_HOSTNAME="${HOSTNAME:-}"
-_ENV_HOSTNAME="$(printenv HOSTNAME 2>/dev/null || true)"
-
 # File creation mask: standard permissions (0755 dirs, 0644 files)
 umask 0022
 
@@ -83,25 +79,30 @@ init_config() {
     VERSION="${_arg_version:-${VERSION:-${default_ver}}}"
 
     # Target hostname resolution:
-    # CLI flag (--hostname) > TARGET_HOSTNAME > HOSTNAME (if set in alarm.conf or exported env) > default "raspberrypi"
-    local resolved_hostname=""
-    if [[ -n "${TARGET_HOSTNAME:-}" ]]; then
-        resolved_hostname="${TARGET_HOSTNAME}"
-    elif [[ -n "${_ENV_HOSTNAME}" ]]; then
-        resolved_hostname="${_ENV_HOSTNAME}"
-    elif [[ -n "${HOSTNAME:-}" && "${HOSTNAME:-}" != "${_HOST_HOSTNAME}" ]]; then
-        resolved_hostname="${HOSTNAME}"
-    fi
-    TARGET_HOSTNAME="${_arg_hostname:-${resolved_hostname:-raspberrypi}}"
+    # CLI flag (--hostname) > TARGET_HOSTNAME > default "raspberrypi"
+    TARGET_HOSTNAME="${_arg_hostname:-${TARGET_HOSTNAME:-raspberrypi}}"
     HOSTNAME="${TARGET_HOSTNAME}"
 
     ROOT_USER="${_arg_root_user:-${ROOT_USER:-root}}"
     ROOT_PASSWORD="${_arg_root_password:-${ROOT_PASSWORD:-root}}"
 
     # Non-root username resolution:
-    # CLI flag (-u/--user/--username) > USERNAME > ALARM_USER > NON_ROOT_USER > USER_NAME > default "alarm"
-    USERNAME="${_arg_user:-${USERNAME:-${ALARM_USER:-${NON_ROOT_USER:-${USER_NAME:-alarm}}}}}"
-    USERNAME="$(echo "${USERNAME}" | tr '[:upper:]' '[:lower:]')"
+    # CLI flag (-u/--user/--username) > USERNAME (if non-root) > ALARM_USER > NON_ROOT_USER > USER_NAME (if non-root) > default "alarm"
+    local resolved_user=""
+    if [[ -n "${_arg_user:-}" ]]; then
+        resolved_user="${_arg_user}"
+    elif [[ -n "${USERNAME:-}" && "${USERNAME}" != "root" ]]; then
+        resolved_user="${USERNAME}"
+    elif [[ -n "${ALARM_USER:-}" && "${ALARM_USER}" != "root" ]]; then
+        resolved_user="${ALARM_USER}"
+    elif [[ -n "${NON_ROOT_USER:-}" && "${NON_ROOT_USER}" != "root" ]]; then
+        resolved_user="${NON_ROOT_USER}"
+    elif [[ -n "${USER_NAME:-}" && "${USER_NAME}" != "root" ]]; then
+        resolved_user="${USER_NAME}"
+    else
+        resolved_user="alarm"
+    fi
+    USERNAME="$(echo "${resolved_user}" | tr '[:upper:]' '[:lower:]')"
     ALARM_USER="${USERNAME}"
 
     PASSWORD="${_arg_password:-${PASSWORD:-${ALARM_PASSWORD:-${NON_ROOT_PASSWORD:-${USER_PASSWORD:-alarm}}}}}"

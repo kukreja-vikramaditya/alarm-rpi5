@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+      - 'test/**'
+      - 'fix/**'
+      - 'ci/**'
     tags:
       - 'v*'
     paths-ignore:
@@ -24,6 +27,15 @@ on:
       - '.gitignore'
       - '.dockerignore'
   workflow_dispatch:
+    inputs:
+      test_only:
+        description: 'Test build only (skip release publishing)'
+        type: boolean
+        default: true
+      no_compress:
+        description: 'Skip compression for faster test verification'
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -46,6 +58,17 @@ jobs:
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -w /workspace \
             alarm-rpi5-builder
+
+      - name: Upload test logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-failure-logs
+          path: |
+            tests/*.log
+            *.log
+          if-no-files-found: ignore
+          retention-days: 7
 
   build:
     name: Build & Publish Image
@@ -103,13 +126,19 @@ jobs:
           echo "==> Building container builder image from Dockerfile..."
           docker build -t alarm-rpi5-builder . 2>&1 | tee docker-build.log
 
+          BUILD_FLAGS=("-y" "--version" "${{ steps.meta.outputs.version }}")
+          if [[ "${{ inputs.no_compress }}" == "true" ]]; then
+            echo "==> Fast test verification requested: disabling xz compression..."
+            BUILD_FLAGS+=("--no-compress")
+          fi
+
           echo "==> Running ALARM image build inside container with version ${{ steps.meta.outputs.version }}..."
           docker run --rm --privileged \
             -v /dev:/dev \
             -v /sys:/sys \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -w /workspace \
-            alarm-rpi5-builder -y --version "${{ steps.meta.outputs.version }}" 2>&1 | tee image-build.log
+            alarm-rpi5-builder "${BUILD_FLAGS[@]}" 2>&1 | tee image-build.log
 
       - name: Push failure log on error
         if: failure()
@@ -133,17 +162,49 @@ jobs:
           git commit -m "ci: capture failure logs [skip ci]" || true
           git push -f origin ci-debug-log || true
 
-
       - name: Generate SHA-256 Checksums
         id: checksums
         run: |
           sudo chown -R "$(id -u):$(id -g)" dist
           sudo chmod -R 755 dist
           cd dist
-          sha256sum *.img.xz > SHA256SUMS
+          sha256sum *.img* > SHA256SUMS
           cat SHA256SUMS
-          IMAGE_FILE="$(ls *.img.xz | head -n 1)"
+          IMAGE_FILE="$(ls *.img* | grep -v 'SHA256SUMS' | head -n 1)"
           echo "image_file=${IMAGE_FILE}" >> "$GITHUB_OUTPUT"
+
+      - name: Verify ALARM image partition and filesystem structure
+        run: |
+          cd dist
+          RAW_IMG="$(ls *.img 2>/dev/null | head -n 1 || true)"
+          if [[ -n "$RAW_IMG" && -f "$RAW_IMG" ]]; then
+            echo "==> Inspecting partition table of uncompressed image ${RAW_IMG}..."
+            parted -s "${RAW_IMG}" print
+            echo "==> Checking partition labels with blkid..."
+            LDEV="$(sudo losetup --find --show -P "${RAW_IMG}")"
+            sudo lsblk -f "${LDEV}"
+            sudo blkid "${LDEV}p1" | grep -q 'LABEL="BOOT"'
+            sudo blkid "${LDEV}p2" | grep -q 'LABEL="ROOT"'
+            echo "==> Mounting partitions to verify core boot and system files..."
+            MNT_DIR="$(mktemp -d)"
+            sudo mount "${LDEV}p2" "${MNT_DIR}"
+            sudo mount "${LDEV}p1" "${MNT_DIR}/boot"
+            ls -la "${MNT_DIR}/boot"
+            test -f "${MNT_DIR}/boot/cmdline.txt"
+            test -f "${MNT_DIR}/boot/config.txt"
+            test -f "${MNT_DIR}/boot/initramfs-linux.img"
+            test -f "${MNT_DIR}/boot/vmlinuz-linux"
+            test -f "${MNT_DIR}/etc/fstab"
+            test -f "${MNT_DIR}/etc/hostname"
+            sudo umount "${MNT_DIR}/boot"
+            sudo umount "${MNT_DIR}"
+            sudo losetup -d "${LDEV}"
+            rmdir "${MNT_DIR}"
+            echo "==> Verified: Arch Linux ARM installation and partition structure is intact!"
+          else
+            echo "==> Compressed image artifact: ${{ steps.checksums.outputs.image_file }}"
+            file "${IMAGE_FILE}" || true
+          fi
 
       - name: Upload Artifact to Workflow Run
         uses: actions/upload-artifact@v4
@@ -154,6 +215,10 @@ jobs:
           retention-days: 30
 
       - name: Publish to GitHub Releases
+        if: |
+          github.event_name != 'pull_request' &&
+          (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) &&
+          (github.event_name != 'workflow_dispatch' || inputs.test_only != true)
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.tag_name }}

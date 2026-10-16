@@ -164,6 +164,19 @@ assert_eq "https://custom.mirror.org" "$MIRROR" "MIRROR env sets MIRROR"
 assert_eq "https://custom.mirror.org" "$ALARM_MIRROR" "MIRROR env sets ALARM_MIRROR alias"
 unset MIRROR ALARM_MIRROR
 
+# Test 3d: Simulated Docker container environment does not corrupt default TARGET_HOSTNAME or ALARM_USER
+(
+    export HOSTNAME="container-hash-789abc"
+    export USERNAME="root"
+    unset TARGET_HOSTNAME ALARM_USER _arg_hostname _arg_user
+    source "${SRC_DIR}/config.sh"
+    init_config
+    assert_eq "raspberrypi" "$TARGET_HOSTNAME" "container HOSTNAME env does not override default TARGET_HOSTNAME"
+    assert_eq "raspberrypi" "$HOSTNAME" "container HOSTNAME env does not override default HOSTNAME"
+    assert_eq "alarm" "$ALARM_USER" "root USERNAME env does not override default ALARM_USER"
+    assert_eq "alarm" "$USERNAME" "root USERNAME env does not override default USERNAME"
+)
+
 # Restore clean defaults for remaining tests
 source "${SRC_DIR}/config.sh"
 _arg_user=""
