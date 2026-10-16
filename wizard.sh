@@ -79,12 +79,12 @@ if [[ -f "${SCRIPT_DIR}/alarm.conf" ]]; then
     # shellcheck source=/dev/null
     source "${SCRIPT_DIR}/alarm.conf"
     VERSION="${VERSION:-1.1.0-snapshot}"
-    TARGET_HOSTNAME="${TARGET_HOSTNAME:-raspberrypi}"
+    TARGET_HOSTNAME="${HOSTNAME:-${TARGET_HOSTNAME:-raspberrypi}}"
     ROOT_USER="${ROOT_USER:-root}"
     ROOT_PASSWORD="${ROOT_PASSWORD:-root}"
-    ALARM_USER="${ALARM_USER:-alarm}"
-    ALARM_PASSWORD="${ALARM_PASSWORD:-alarm}"
-    IMG_SIZE="${IMG_SIZE:-3G}"
+    ALARM_USER="${USERNAME:-${ALARM_USER:-alarm}}"
+    ALARM_PASSWORD="${PASSWORD:-${ALARM_PASSWORD:-alarm}}"
+    IMG_SIZE="${IMAGE_SIZE:-${IMG_SIZE:-3G}}"
     COMPRESS="${COMPRESS:-1}"
     OUTPUT_DIR="${OUTPUT_DIR:-${SCRIPT_DIR}/dist}"
 fi

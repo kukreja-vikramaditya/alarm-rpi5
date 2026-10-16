@@ -71,24 +71,26 @@ ROOTFS=""
 
 # Test 3: Pacman configuration generation from data/ template
 test_conf="$(mktemp /tmp/pacman-aarch64.testgenXXXXXX.conf)"
-sed "s|@ALARM_MIRROR@|${ALARM_MIRROR}|g" "${DATA_DIR}/pacman-bootstrap.conf" >"${test_conf}"
+sed "s|@ALARM_MIRROR@|${MIRROR}|g" "${DATA_DIR}/pacman-bootstrap.conf" >"${test_conf}"
 
 conf_content="$(cat "${test_conf}")"
 assert_contains "$conf_content" "Architecture = aarch64" "pacman conf sets aarch64"
 assert_contains "$conf_content" "SigLevel    = Never" "pacman conf bootstrap siglevel"
-assert_contains "$conf_content" "${ALARM_MIRROR}/\$arch/\$repo" "pacman conf uses ALARM_MIRROR"
+assert_contains "$conf_content" "${MIRROR}/\$arch/\$repo" "pacman conf uses MIRROR"
+assert_eq "$MIRROR" "$ALARM_MIRROR" "MIRROR equals ALARM_MIRROR alias"
 rm -f "${test_conf}"
 
 # Test 3b: System config templates from data/ (hosts, locale, sudoers, pacman-runtime)
 test_hosts="$(mktemp /tmp/hosts.testgenXXXXXX)"
-sed "s|@TARGET_HOSTNAME@|${TARGET_HOSTNAME}|g" "${DATA_DIR}/hosts" >"${test_hosts}"
-assert_contains "$(cat "${test_hosts}")" "127.0.1.1   ${TARGET_HOSTNAME}" "hosts template substitutes hostname"
+sed "s|@TARGET_HOSTNAME@|${HOSTNAME}|g" "${DATA_DIR}/hosts" >"${test_hosts}"
+assert_contains "$(cat "${test_hosts}")" "127.0.1.1   ${HOSTNAME}" "hosts template substitutes hostname"
+assert_eq "$HOSTNAME" "$TARGET_HOSTNAME" "HOSTNAME equals TARGET_HOSTNAME alias"
 rm -f "${test_hosts}"
 
 test_runtime_conf="$(mktemp /tmp/pacman-runtime.testgenXXXXXX.conf)"
-sed "s|@ALARM_MIRROR@|${ALARM_MIRROR}|g" "${DATA_DIR}/pacman-runtime.conf" >"${test_runtime_conf}"
+sed "s|@ALARM_MIRROR@|${MIRROR}|g" "${DATA_DIR}/pacman-runtime.conf" >"${test_runtime_conf}"
 assert_contains "$(cat "${test_runtime_conf}")" "SigLevel    = Required DatabaseOptional" "runtime pacman conf enables signature check"
-assert_contains "$(cat "${test_runtime_conf}")" "${ALARM_MIRROR}/\$arch/\$repo" "runtime pacman conf uses ALARM_MIRROR"
+assert_contains "$(cat "${test_runtime_conf}")" "${MIRROR}/\$arch/\$repo" "runtime pacman conf uses MIRROR"
 rm -f "${test_runtime_conf}"
 
 assert_file_exists "${DATA_DIR}/sudoers-wheel" "sudoers-wheel exists in data/"

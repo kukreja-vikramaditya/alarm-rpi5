@@ -26,7 +26,7 @@ The built image is pre-configured with default credentials and passwordless `sud
 > [!TIP]
 > **Customizing Credentials During Build:**
 > - **Interactive Wizard:** Run `./build.sh` without `-y` to customize usernames and passwords interactively.
-> - **Environment Variables:** Set `ALARM_USER`, `ALARM_PASSWORD`, `ROOT_USER`, and `ROOT_PASSWORD` (e.g., `ALARM_USER=myuser ALARM_PASSWORD=mypass ./build.sh -y`).
+> - **Environment Variables:** Set `USERNAME` (or `ALARM_USER`), `PASSWORD` (or `ALARM_PASSWORD`), `ROOT_USER`, and `ROOT_PASSWORD` (e.g., `USERNAME=myuser PASSWORD=mypass ./build.sh -y`).
 
 > [!IMPORTANT]
 > **Security Notice:**
@@ -101,13 +101,13 @@ Options:
 ./build.sh -y -v 1.1.0-snapshot -o ./dist
 
 # Larger image with extra packages
-IMG_SIZE=8G EXTRA_PACKAGES="git htop vim" ./build.sh -y
+IMAGE_SIZE=8G PACKAGES="git htop vim" ./build.sh -y
 
 # Skip compression for faster iteration
 ./build.sh -y --no-compress
 
-# Override hostname, timezone, and user credentials
-TARGET_HOSTNAME=mypi TIMEZONE=Asia/Kolkata ALARM_USER=vikram ALARM_PASSWORD=secret \
+# Override hostname, timezone, locale, and user credentials
+HOSTNAME=mypi TZ=Asia/Kolkata LANG=en_US.UTF-8 USERNAME=vikram PASSWORD=secret \
   ./build.sh -y
 ```
 
@@ -117,26 +117,27 @@ All settings have sensible defaults. Precedence order: **CLI Flags > `alarm.conf
 
 ### Configuration File (`alarm.conf`)
 
-You can configure all options declaratively directly in `alarm.conf`.
+You can configure all options declaratively directly in `alarm.conf`. Both standard POSIX/UNIX names and legacy aliases are supported.
 
 ### Supported Settings
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `IMG_SIZE` | `3G` | Raw image size (fits on any SD card >=4GB; sparse zeros compress to ~340MB) |
-| `VERSION` | `1.1.0-snapshot` | Embedded in output filename (tracks root `VERSION` file) |
-| `IMG_NAME` | `alarm-rpi5-{ver}-{date}` | Full override for output filename |
-| `BOOT_SIZE_MIB` | `256` | Boot partition size in MiB |
-| `TARGET_HOSTNAME` | `raspberrypi` | System hostname |
-| `ROOT_USER` | `root` | Root username |
-| `ROOT_PASSWORD` | `root` | Root password |
-| `ALARM_USER` | `alarm` | Non-root user (wheel group) |
-| `ALARM_PASSWORD` | `alarm` | Non-root user password |
-| `TIMEZONE` | `Asia/Kolkata` | System timezone |
-| `LOCALE` | `en_US.UTF-8` | System locale |
-| `EXTRA_PACKAGES` | `git curl wget vim neovim tmux zsh` | Space-separated list of extra pacman packages |
-| `ALARM_MIRROR` | `http://mirror.archlinuxarm.org` | ALARM mirror URL |
-| `COMPRESS` | `1` | Set to `0` to skip xz compression |
+| Variable | Legacy Alias | Default | Description |
+|----------|--------------|---------|-------------|
+| `TZ` | `TIMEZONE` | `Asia/Kolkata` | System timezone (POSIX standard) |
+| `LANG` | `LOCALE` | `en_US.UTF-8` | System locale (POSIX standard) |
+| `HOSTNAME` | `TARGET_HOSTNAME` | `raspberrypi` | System hostname |
+| `USERNAME` | `ALARM_USER` | `alarm` | Non-root user (wheel group / sudo privileges) |
+| `PASSWORD` | `ALARM_PASSWORD` | `alarm` | Non-root user password |
+| `ROOT_USER` | — | `root` | Root administrator username |
+| `ROOT_PASSWORD` | — | `root` | Root administrator password |
+| `PACKAGES` | `EXTRA_PACKAGES` | `git curl wget vim neovim tmux zsh` | Space-separated list of extra pacman packages |
+| `IMAGE_SIZE` | `IMG_SIZE` | `3G` | Raw disk image size (fits on any SD card >=4GB) |
+| `BOOT_SIZE` | `BOOT_SIZE_MIB` | `256M` | Boot partition size |
+| `MIRROR` | `ALARM_MIRROR` | `http://mirror.archlinuxarm.org` | Arch Linux ARM mirror URL |
+| `COMPRESS` | — | `1` | Set to `0` to skip xz compression (.img raw) |
+| `OUTPUT_DIR` | — | `./dist` | Output directory for built images |
+| `VERSION` | — | `1.1.0-snapshot` | Embedded in output filename (tracks root `VERSION` file) |
+| `IMG_NAME` | — | `alarm-rpi5-{ver}-{date}` | Full override for output filename |
 
 ## Flashing
 

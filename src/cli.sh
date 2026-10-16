@@ -29,9 +29,11 @@ Options:
   -h, --help               Show this help
 
 Environment overrides (lower precedence than flags):
-  IMG_SIZE, VERSION, IMG_NAME, BOOT_SIZE_MIB, TARGET_HOSTNAME,
-  ROOT_USER, ROOT_PASSWORD, ALARM_USER, NON_ROOT_USER, ALARM_PASSWORD,
-  TIMEZONE, LOCALE, EXTRA_PACKAGES, ALARM_MIRROR, COMPRESS
+  IMAGE_SIZE (or IMG_SIZE), VERSION, IMG_NAME, BOOT_SIZE (or BOOT_SIZE_MIB),
+  HOSTNAME (or TARGET_HOSTNAME), ROOT_USER, ROOT_PASSWORD,
+  USERNAME (or ALARM_USER), PASSWORD (or ALARM_PASSWORD),
+  TZ (or TIMEZONE), LANG (or LOCALE), PACKAGES (or EXTRA_PACKAGES),
+  MIRROR (or ALARM_MIRROR), COMPRESS
 
 Examples:
   ./${script_name} --check
@@ -39,7 +41,7 @@ Examples:
   sudo ./${script_name} -y               # build immediately with defaults
   sudo ./${script_name} -u vikram -p secret123
   sudo ./${script_name} -o /mnt/build -v 1.0.0
-  EXTRA_PACKAGES="git htop" sudo ./${script_name}
+  PACKAGES="git htop" sudo ./${script_name}
 USAGE
 }
 

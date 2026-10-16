@@ -29,7 +29,7 @@ ensure_loop_partitions() {
 # Phase 1: Create disk image & partitions
 # ──────────────────────────────────────────────────────────────────────
 create_image() {
-    log_phase "Phase 1/5 — Clean previous attempts & create disk image (${IMG_SIZE})"
+    log_phase "Phase 1/5 — Clean previous attempts & create disk image (${IMAGE_SIZE})"
 
     # Clean up lingering resources from any previous installation attempts
     cleanup_previous_run
@@ -58,13 +58,13 @@ create_image() {
     fi
 
     # Allocate sparse file
-    truncate -s "${IMG_SIZE}" "${IMG_FILE}"
+    truncate -s "${IMAGE_SIZE}" "${IMG_FILE}"
     log_info "Sparse disk image allocated: ${IMG_FILE}"
 
     # Partition table: GPT
-    #   p1: FAT32, ${BOOT_SIZE_MIB}MiB, bootable, type ESP/boot
+    #   p1: FAT32, ${BOOT_SIZE}MiB, bootable, type ESP/boot
     #   p2: ext4,   fills remainder
-    local boot_end=$((BOOT_SIZE_MIB + 1)) # 1MiB alignment offset
+    local boot_end=$((BOOT_SIZE + 1)) # 1MiB alignment offset
     parted -s -- "${IMG_FILE}" \
         mklabel gpt \
         mkpart "boot" fat32 1MiB "${boot_end}MiB" \
@@ -83,7 +83,7 @@ create_image() {
     run_spin "Formatting boot partition (FAT32)" mkfs.vfat -F32 -n BOOT "${LOOP}p1"
     run_spin "Formatting root partition (ext4)" mkfs.ext4 -L ROOT -F -q "${LOOP}p2"
 
-    log_info "Partitions created: ${BOOT_SIZE_MIB}MiB FAT32 boot + ext4 root"
+    log_info "Partitions created: ${BOOT_SIZE}MiB FAT32 boot + ext4 root"
 }
 
 # ──────────────────────────────────────────────────────────────────────
@@ -104,7 +104,7 @@ bootstrap_rootfs() {
 
     # Write pacman config for aarch64 / ALARM repos from data/ template
     PACMAN_CONF="$(mktemp -- /tmp/pacman-aarch64.XXXXXX.conf)"
-    sed "s|@ALARM_MIRROR@|${ALARM_MIRROR}|g" "${DATA_DIR}/pacman-bootstrap.conf" >"${PACMAN_CONF}"
+    sed "s|@ALARM_MIRROR@|${MIRROR}|g" "${DATA_DIR}/pacman-bootstrap.conf" >"${PACMAN_CONF}"
 
     # Base packages for a working RPi 5 system + conveniences
     local -a packages=(
@@ -127,9 +127,9 @@ bootstrap_rootfs() {
     )
 
     # Append user-specified extra packages
-    if [[ -n "${EXTRA_PACKAGES}" ]]; then
+    if [[ -n "${PACKAGES}" ]]; then
         local -a extras
-        IFS=' ' read -ra extras <<<"${EXTRA_PACKAGES}"
+        IFS=' ' read -ra extras <<<"${PACKAGES}"
         for pkg in "${extras[@]}"; do
             [[ "$pkg" == "nvim" ]] && pkg="neovim"
             packages+=("${pkg}")
@@ -168,16 +168,16 @@ configure_system() {
     log_phase "Phase 4/5 — Configure system (chroot)"
 
     # Deploy system configuration files from data/ templates
-    sed "s|@LOCALE@|${LOCALE}|g" "${DATA_DIR}/locale.gen" >"${ROOTFS}/etc/locale.gen"
-    sed "s|@LOCALE@|${LOCALE}|g" "${DATA_DIR}/locale.conf" >"${ROOTFS}/etc/locale.conf"
-    sed "s|@TARGET_HOSTNAME@|${TARGET_HOSTNAME}|g" "${DATA_DIR}/hosts" >"${ROOTFS}/etc/hosts"
-    printf '%s\n' "${TARGET_HOSTNAME}" >"${ROOTFS}/etc/hostname"
+    sed "s|@LOCALE@|${LANG}|g" "${DATA_DIR}/locale.gen" >"${ROOTFS}/etc/locale.gen"
+    sed "s|@LOCALE@|${LANG}|g" "${DATA_DIR}/locale.conf" >"${ROOTFS}/etc/locale.conf"
+    sed "s|@TARGET_HOSTNAME@|${HOSTNAME}|g" "${DATA_DIR}/hosts" >"${ROOTFS}/etc/hosts"
+    printf '%s\n' "${HOSTNAME}" >"${ROOTFS}/etc/hostname"
 
     mkdir -p -- "${ROOTFS}/etc/sudoers.d"
     cp -- "${DATA_DIR}/sudoers-wheel" "${ROOTFS}/etc/sudoers.d/wheel"
     chmod 440 "${ROOTFS}/etc/sudoers.d/wheel"
 
-    sed "s|@ALARM_MIRROR@|${ALARM_MIRROR}|g" "${DATA_DIR}/pacman-runtime.conf" >"${ROOTFS}/etc/pacman.conf"
+    sed "s|@ALARM_MIRROR@|${MIRROR}|g" "${DATA_DIR}/pacman-runtime.conf" >"${ROOTFS}/etc/pacman.conf"
 
     # Pre-configure native systemd-networkd for automatic wired DHCP on any ethernet interface
     mkdir -p -- "${ROOTFS}/etc/systemd/network"
@@ -215,7 +215,7 @@ configure_system() {
 	pacman-key --populate archlinuxarm
 
 	# Timezone & Locale
-	ln -sf "/usr/share/zoneinfo/${TIMEZONE}" /etc/localtime
+	ln -sf "/usr/share/zoneinfo/${TZ}" /etc/localtime
 	locale-gen
 
 	# Enable native systemd networking (zero external dependencies)
@@ -232,7 +232,7 @@ configure_system() {
 	printf '%s\n' "${ROOT_USER:-root}:${ROOT_PASSWORD}" | chpasswd
 
 	# Remove default alarm user if user configured a different custom username
-	if [[ "${ALARM_USER}" != "alarm" ]] && id alarm &>/dev/null; then
+	if [[ "${USERNAME}" != "alarm" ]] && id alarm &>/dev/null; then
 		userdel -r alarm 2>/dev/null || true
 	fi
 
@@ -247,14 +247,14 @@ configure_system() {
 
 	# Ensure /home has standard 755 permissions and create/configure non-root user
 	chmod 755 /home
-	if id "${ALARM_USER}" &>/dev/null; then
-		usermod -aG "\${groups_csv}" -s /bin/bash "${ALARM_USER}"
+	if id "${USERNAME}" &>/dev/null; then
+		usermod -aG "\${groups_csv}" -s /bin/bash "${USERNAME}"
 	else
-		useradd -m -U -G "\${groups_csv}" -s /bin/bash "${ALARM_USER}"
+		useradd -m -U -G "\${groups_csv}" -s /bin/bash "${USERNAME}"
 	fi
-	printf '%s\n' "${ALARM_USER}:${ALARM_PASSWORD}" | chpasswd
-	chown -R "${ALARM_USER}:${ALARM_USER}" "/home/${ALARM_USER}"
-	chmod 700 "/home/${ALARM_USER}"
+	printf '%s\n' "${USERNAME}:${PASSWORD}" | chpasswd
+	chown -R "${USERNAME}:${USERNAME}" "/home/${USERNAME}"
+	chmod 700 "/home/${USERNAME}"
 
 	# Clean pacman cache to reduce image size
 	pacman -Scc --noconfirm
@@ -343,7 +343,7 @@ finalize_image() {
             "" \
             "Configured credentials:" \
             "  root  / ${ROOT_PASSWORD}" \
-            "  ${ALARM_USER} / ${ALARM_PASSWORD}" \
+            "  ${USERNAME} / ${PASSWORD}" \
             "" \
             "First boot: connect Ethernet, SSH in, then:" \
             "  sudo pacman -Syu"
@@ -364,7 +364,7 @@ finalize_image() {
 	
 	  Configured credentials:
 	    root  / ${ROOT_PASSWORD}
-	    ${ALARM_USER} / ${ALARM_PASSWORD}
+	    ${USERNAME} / ${PASSWORD}
 	
 	  First boot: connect Ethernet, SSH in, then:
 	    sudo pacman -Syu

@@ -56,7 +56,7 @@ check_environment() {
     fi
 
     # 5. Mirror connectivity
-    local mirror_url="${ALARM_MIRROR:-http://mirror.archlinuxarm.org}"
+    local mirror_url="${MIRROR:-${ALARM_MIRROR:-http://mirror.archlinuxarm.org}}"
     if curl --head --silent --fail --connect-timeout 5 "${mirror_url}" &>/dev/null; then
         "$GUM_BIN" log -l info "ALARM mirror reachable (${mirror_url})"
     else
