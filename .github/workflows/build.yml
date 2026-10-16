@@ -53,11 +53,24 @@ jobs:
 
       - name: Run test suites inside Arch Linux container (10 suites)
         run: |
+          set -o pipefail
           docker run --rm \
             --entrypoint ./tests/run_all.sh \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -w /workspace \
-            alarm-rpi5-builder
+            alarm-rpi5-builder 2>&1 | tee test-output.log
+
+      - name: Push test failure log on error
+        if: failure()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan ci-test-failure-log || git checkout ci-test-failure-log
+          git rm -rf . || true
+          cp test-output.log failure-log.txt 2>/dev/null || true
+          git add failure-log.txt
+          git commit -m "ci: capture test failure logs [skip ci]" || true
+          git push -f origin ci-test-failure-log || true
 
       - name: Upload test logs on failure
         if: failure()
@@ -65,6 +78,7 @@ jobs:
         with:
           name: test-failure-logs
           path: |
+            test-output.log
             tests/*.log
             *.log
           if-no-files-found: ignore
