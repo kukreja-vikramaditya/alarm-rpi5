@@ -155,7 +155,8 @@ configure_boot() {
 
     mkdir -p -- "${ROOTFS}/etc" "${ROOTFS}/boot"
     cp -- "${DATA_DIR}/fstab" "${ROOTFS}/etc/fstab"
-    cp -- "${DATA_DIR}/cmdline.txt" "${ROOTFS}/boot/cmdline.txt"
+    # Deploy kernel cmdline without comments/empty lines (RPi bootloader requires a single raw line)
+    grep -v '^[[:space:]]*#' "${DATA_DIR}/cmdline.txt" | grep -v '^[[:space:]]*$' | tr -d '\r\n' | sed -e '$s/$/\n/' >"${ROOTFS}/boot/cmdline.txt"
     cp -- "${DATA_DIR}/config.txt" "${ROOTFS}/boot/config.txt"
 
     log_info "Boot config written (config.txt, cmdline.txt, fstab from data/)"

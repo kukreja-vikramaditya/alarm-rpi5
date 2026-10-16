@@ -1,1 +1,3 @@
+# Created for Arch Linux ARM Raspberry Pi 5 Image Builder
+# Project: https://github.com/kukreja-vikramaditya/alarm-rpi5
 root=/dev/mmcblk0p2 rw rootwait console=tty1 console=ttyAMA10,115200

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Created for Arch Linux ARM Raspberry Pi 5 Image Builder
+# Project: https://github.com/kukreja-vikramaditya/alarm-rpi5
+#
 # /usr/local/bin/install-ui — Automated Desktop Environment installer for Arch Linux ARM (RPi 5)
 set -euo pipefail
 

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Created for Arch Linux ARM Raspberry Pi 5 Image Builder
+# Project: https://github.com/kukreja-vikramaditya/alarm-rpi5
+#
 # /usr/local/bin/alarm-expand-root.sh — Expand root partition and ext4 filesystem to 100% of disk
 set -euo pipefail
 

@@ -1,3 +1,6 @@
+# Created for Arch Linux ARM Raspberry Pi 5 Image Builder
+# Project: https://github.com/kukreja-vikramaditya/alarm-rpi5
+
 127.0.0.1   localhost
 ::1         localhost
 127.0.1.1   @TARGET_HOSTNAME@
