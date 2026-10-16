@@ -46,31 +46,18 @@ parse_wizard_cli() {
 }
 
 load_wizard_defaults() {
-    VERSION=""
-    if [[ -f "${SCRIPT_DIR}/VERSION" ]]; then
-        VERSION="$(tr -d '[:space:]' <"${SCRIPT_DIR}/VERSION")"
-    fi
+    VERSION="$(tr -d '[:space:]' <"${SCRIPT_DIR}/VERSION")"
     VERSION="${VERSION:-0.0.0-snapshot}"
-    TARGET_HOSTNAME="raspberrypi"
-    ROOT_USER="root"
-    ROOT_PASSWORD="root"
-    ALARM_USER="alarm"
-    ALARM_PASSWORD="alarm"
-    IMG_SIZE="3G"
-    COMPRESS=1
-    OUTPUT_DIR="${SCRIPT_DIR}/dist"
 
-    if [[ -f "${SCRIPT_DIR}/alarm.conf" ]]; then
-        # shellcheck source=/dev/null
-        source "${SCRIPT_DIR}/alarm.conf"
-        VERSION="${VERSION:-0.0.0-snapshot}"
-        TARGET_HOSTNAME="${HOSTNAME:-${TARGET_HOSTNAME:-raspberrypi}}"
-        ROOT_USER="${ROOT_USER:-root}"
-        ROOT_PASSWORD="${ROOT_PASSWORD:-root}"
-        ALARM_USER="${USERNAME:-${ALARM_USER:-alarm}}"
-        ALARM_PASSWORD="${PASSWORD:-${ALARM_PASSWORD:-alarm}}"
-        IMG_SIZE="${IMAGE_SIZE:-${IMG_SIZE:-3G}}"
-        COMPRESS="${COMPRESS:-1}"
-        OUTPUT_DIR="${OUTPUT_DIR:-${SCRIPT_DIR}/dist}"
-    fi
+    # shellcheck source=/dev/null
+    source "${SCRIPT_DIR}/alarm.conf"
+
+    TARGET_HOSTNAME="${HOSTNAME:-raspberrypi}"
+    ROOT_USER="${ROOT_USER:-root}"
+    ROOT_PASSWORD="${ROOT_PASSWORD:-root}"
+    ALARM_USER="${USERNAME:-alarm}"
+    ALARM_PASSWORD="${PASSWORD:-alarm}"
+    IMG_SIZE="${IMAGE_SIZE:-3G}"
+    COMPRESS="${COMPRESS:-1}"
+    OUTPUT_DIR="${OUTPUT_DIR:-${SCRIPT_DIR}/dist}"
 }

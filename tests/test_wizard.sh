@@ -132,18 +132,15 @@ assert_contains "$cancel_out" "Build cancelled by user" "wizard prints cancellat
 assert_contains "$cancel_out" "Executable Command:" "wizard summary includes Executable Command"
 assert_contains "$cancel_out" "./build.sh -y" "wizard summary includes executable CLI command"
 
-# Test 9: Fallback version 0.0.0-snapshot when VERSION file is absent or empty
+# Test 9: Fallback version 0.0.0-snapshot when VERSION file is empty
 (
     tmp_test_dir="$(mktemp -d)"
     trap 'rm -rf "$tmp_test_dir"' EXIT
     mkdir -p "${tmp_test_dir}/wizard"
     cp "${SCRIPT_DIR}/wizard/config.sh" "${tmp_test_dir}/wizard/"
-
-    ver_missing="$(bash -c "SCRIPT_DIR='${tmp_test_dir}' && source '${tmp_test_dir}/wizard/config.sh' && load_wizard_defaults && echo \"\$VERSION\"")"
-    assert_eq "0.0.0-snapshot" "$ver_missing" "wizard/config.sh falls back to 0.0.0-snapshot when VERSION missing"
-
-    # Also test with empty VERSION file
+    cp "${SCRIPT_DIR}/alarm.conf" "${tmp_test_dir}/"
     touch "${tmp_test_dir}/VERSION"
+
     ver_empty="$(bash -c "SCRIPT_DIR='${tmp_test_dir}' && source '${tmp_test_dir}/wizard/config.sh' && load_wizard_defaults && echo \"\$VERSION\"")"
     assert_eq "0.0.0-snapshot" "$ver_empty" "wizard/config.sh falls back to 0.0.0-snapshot when VERSION file is empty"
 )
