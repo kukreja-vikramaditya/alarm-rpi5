@@ -14,6 +14,7 @@ TARGET_SCRIPTS=(
     "${SCRIPT_DIR}/build.sh"
     "${SCRIPT_DIR}/docker-build.sh"
     "${SCRIPT_DIR}/wizard.sh"
+    "${SCRIPT_DIR}/wizard/"*.sh
     "${SRC_DIR}/"*.sh
     "${SCRIPT_DIR}/tests/"*.sh
 )

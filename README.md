@@ -271,7 +271,7 @@ Or run test suites for individual components directly:
 ./tests/test_cleanup.sh     # src/cleanup.sh (unmounts, signal traps, temp cleanup)
 ./tests/test_cli.sh         # src/cli.sh (argument parsing, flags, usage)
 ./tests/test_config.sh      # src/config.sh (defaults, env overrides, path math)
-./tests/test_wizard.sh      # wizard.sh (standalone interactive TUI & command generator)
+./tests/test_wizard.sh      # wizard.sh & wizard/ modules (interactive TUI & command generator)
 ./tests/test_doctor.sh      # src/doctor.sh (environment diagnostics, package map)
 ./tests/test_build.sh       # src/build.sh (boot configs, partition math, pacman)
 ./tests/test_entrypoint.sh  # build.sh root entry point

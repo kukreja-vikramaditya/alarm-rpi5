@@ -18,6 +18,16 @@ else
     assert_eq "0" "1" "wizard.sh syntax validation (bash -n)"
 fi
 
+for mod in config.sh gum.sh bash.sh; do
+    mod_path="${SCRIPT_DIR}/wizard/${mod}"
+    assert_file_exists "$mod_path" "wizard/${mod} exists"
+    if bash -n "$mod_path"; then
+        assert_eq "0" "0" "wizard/${mod} syntax validation (bash -n)"
+    else
+        assert_eq "0" "1" "wizard/${mod} syntax validation (bash -n)"
+    fi
+done
+
 # Test 2: File exists and permissions
 assert_file_exists "$WIZARD_BIN" "wizard.sh exists"
 if [[ -x "$WIZARD_BIN" ]]; then

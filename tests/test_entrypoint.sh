@@ -111,5 +111,8 @@ if [[ -x "${SCRIPT_DIR}/wizard.sh" ]]; then
 else
     assert_eq "0" "1" "wizard.sh is executable"
 fi
+for mod in config.sh gum.sh bash.sh; do
+    assert_file_exists "${SCRIPT_DIR}/wizard/${mod}" "wizard/${mod} exists"
+done
 
 test_summary "Root Entry Points"
